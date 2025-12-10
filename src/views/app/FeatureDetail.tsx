@@ -3,7 +3,7 @@ import { features } from "@/components/FeatureScroll";
 import DashboardPage from "./pages/DashboardPage";
 import { MachinesPage } from "./pages/MachinesPage";
 import { WorkersPage } from "./pages/WorkersPage";
-import { HealthPage } from "./pages/HealthPage";
+
 import { WeatherPage } from "./pages/WeatherPage";
 import { EcoConnectPage } from "./pages/EcoConnectPage";
 
@@ -17,8 +17,7 @@ export const FeatureDetail = ({ feature, onClose }: { feature: typeof features[0
                 return <MachinesPage onNavigate={onClose} />;
             case 'workers':
                 return <WorkersPage onNavigate={onClose} />;
-            case 'health':
-                return <HealthPage onNavigate={onClose} />;
+
             case 'weather':
                 return <WeatherPage onNavigate={onClose} />;
             case 'news_station':

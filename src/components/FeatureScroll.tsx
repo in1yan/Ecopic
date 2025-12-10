@@ -1,6 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef, useState, ChangeEvent } from "react";
-import { LayoutDashboard, Tractor, Users, ScanLine, CloudSun, LucideIcon, Bell, Wrench, CheckCircle, AlertTriangle, Radio, TrendingUp, Globe } from "lucide-react";
+import { useRef, useState, useEffect, ChangeEvent } from "react";
+import { useWorkerContext } from "@/context/WorkerContext";
+import { LayoutDashboard, Tractor, Users, CloudSun, LucideIcon, Bell, Wrench, CheckCircle, AlertTriangle, Radio, TrendingUp, Globe, Activity } from "lucide-react";
 
 const GradientIcon = ({ icon: Icon, id, from, to }: { icon: LucideIcon, id: string, from: string, to: string }) => (
     <div className="relative flex items-center justify-center">
@@ -74,19 +75,7 @@ export const features = [
         },
         gradient: 'from-sky-400 to-blue-500'
     },
-    {
-        id: 'health',
-        title: 'Plant Health Analyzer',
-        subtitle: 'AI-powered disease detection for cotton plants',
-        description: 'Leverage advanced AI to detect early signs of disease and pest infestation. Simply upload photos of your crops for instant analysis and treatment recommendations.',
-        icon: <GradientIcon icon={ScanLine} id="grad-health" from="#4ade80" to="#16a34a" />,
-        previewData: {
-            status: 'Ready to analyze',
-            description: 'Upload a photo of cotton leaf or boll to detect diseases using AI',
-            formats: 'SVG, PNG, JPG or GIF (MAX. 800x400px)'
-        },
-        gradient: 'from-sky-400 to-blue-500'
-    },
+
     {
         id: 'weather',
         title: 'Weather Station',
@@ -94,16 +83,9 @@ export const features = [
         description: 'Access hyper-local weather data to make informed decisions about irrigation, spraying, and harvesting. Stay ahead of changing conditions.',
         icon: <GradientIcon icon={CloudSun} id="grad-weather" from="#facc15" to="#0ea5e9" />,
         previewData: {
-            current: { temp: 17, condition: 'Haze', humidity: 63, windSpeed: 4 },
-            insights: [
-                { type: 'Irrigation', message: 'Moisture levels adequate. No irrigation needed.' },
-                { type: 'Spraying', message: 'Conditions favorable for spraying if needed.' }
-            ],
-            forecast: [
-                { day: 'Fri', temp: 16, condition: 'Clouds' },
-                { day: 'Sat', temp: 23, condition: 'Clouds' },
-                { day: 'Sun', temp: 24, condition: 'Clouds' }
-            ]
+            current: { temp: 0, condition: 'Loading...', humidity: 0, windSpeed: 0 },
+            insights: [],
+            forecast: []
         },
         gradient: 'from-sky-400 to-blue-500'
     },
@@ -185,7 +167,7 @@ const FeatureCard = ({ feature, index, onSelect, containerRef }: { feature: type
                         {feature.id === 'dashboard' && <DashboardPreview data={feature.previewData} />}
                         {feature.id === 'machines' && <MachinesPreview data={feature.previewData} />}
                         {feature.id === 'workers' && <WorkersPreview data={feature.previewData} />}
-                        {feature.id === 'health' && <HealthPreview data={feature.previewData} />}
+
                         {feature.id === 'weather' && <WeatherPreview data={feature.previewData} />}
                         {feature.id === 'news_station' && <NewsBillboardPreview data={feature.previewData} />}
                     </div>
@@ -394,184 +376,171 @@ const MachinesPreview = ({ data }: any) => (
     </div>
 );
 
-const WorkersPreview = ({ data }: any) => (
-    <div className="grid grid-cols-2 gap-4">
-        {/* Left Column: Stats in 2x2 grid */}
-        <div className="grid grid-cols-2 gap-3">
-            {/* Total Workers */}
-            <div className="p-3 bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm">
-                <div className="text-zinc-300 text-sm mb-1">Total Workers</div>
-                <div className="text-3xl font-bold text-white">{data.stats.total}</div>
-            </div>
-            {/* Active Today */}
-            <div className="p-3 bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm">
-                <div className="text-zinc-300 text-sm mb-1">Active Today</div>
-                <div className="text-3xl font-bold text-white">{data.stats.active}</div>
-            </div>
-            {/* Wages Paid */}
-            <div className="p-3 bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm">
-                <div className="text-zinc-300 text-sm mb-1">Wages Paid</div>
-                <div className="text-3xl font-bold text-white">{data.stats.wagesPaid}</div>
-            </div>
-            {/* Avg Efficiency */}
-            <div className="p-3 bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm">
-                <div className="text-zinc-300 text-sm mb-1">Avg Efficiency</div>
-                <div className="text-3xl font-bold text-white">{data.stats.avgEfficiency}</div>
-            </div>
-        </div>
-
-        {/* Right Column: Top Performers List */}
-        <div className="p-3 bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-2">
-                <h4 className="text-white font-semibold text-base">Top Performers</h4>
-                <span className="text-sm px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded-full border border-yellow-500/20">Today</span>
-            </div>
-            <div className="space-y-2">
-                {data.topPerformers.map((worker: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/5">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                                {idx + 1}
-                            </div>
-                            <div>
-                                <div className="text-zinc-200 font-medium">{worker.name}</div>
-                                <div className="text-zinc-500 text-xs">{worker.picked} kg picked</div>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-emerald-400 font-bold">{worker.wage}</div>
-                            <div className="text-zinc-500 text-xs">Earned</div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    </div>
-);
-
-const HealthPreview = ({ data }: any) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [selectedFile, setSelectedFile] = useState<string | null>(null);
-
-    const handleBoxClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setSelectedFile(file.name);
-        }
-    };
+const WorkersPreview = ({ data: _initialData }: any) => {
+    const { stats, topPerformers } = useWorkerContext();
 
     return (
         <div className="grid grid-cols-2 gap-4">
-            {/* Left Column: Stats */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm">
-                    <div className="text-zinc-400 text-sm mb-1">Scans Today</div>
-                    <div className="text-3xl font-bold text-white">12</div>
+            {/* Left Column: Stats in 2x2 grid (merged some cells) */}
+            <div className="flex flex-col gap-4">
+                {/* Total Workers */}
+                <div className="p-4 bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm flex items-center justify-between">
+                    <div>
+                        <div className="text-zinc-300 text-sm mb-1">Total Workers</div>
+                        <div className="text-3xl font-bold text-white">{stats.totalWorkers}</div>
+                    </div>
+                    <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
+                        <Users className="w-6 h-6" />
+                    </div>
                 </div>
-                <div className="p-3 bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm">
-                    <div className="text-zinc-400 text-sm mb-1">Issues Found</div>
-                    <div className="text-3xl font-bold text-orange-400">3</div>
+
+                {/* Total Cost */}
+                <div className="p-4 bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm flex items-center justify-between">
+                    <div>
+                        <div className="text-zinc-300 text-sm mb-1">Total Cost</div>
+                        <div className="text-3xl font-bold text-white">₹{stats.totalCost.toLocaleString()}</div>
+                    </div>
+                    <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg">
+                        <TrendingUp className="w-6 h-6" />
+                    </div>
                 </div>
-                <div className="p-3 bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm">
-                    <div className="text-zinc-400 text-sm mb-1">Healthy Plants</div>
-                    <div className="text-3xl font-bold text-emerald-400">94%</div>
-                </div>
-                <div className="p-3 bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm">
-                    <div className="text-zinc-400 text-sm mb-1">Pending</div>
-                    <div className="text-3xl font-bold text-white">2</div>
+
+                {/* Avg Efficiency */}
+                <div className="p-4 bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm flex items-center justify-between">
+                    <div>
+                        <div className="text-zinc-300 text-sm mb-1">Avg Efficiency</div>
+                        <div className="text-3xl font-bold text-white">{stats.avgEfficiency}</div>
+                    </div>
+                    <div className="p-2 bg-purple-500/20 text-purple-400 rounded-lg">
+                        <Activity className="w-6 h-6" />
+                    </div>
                 </div>
             </div>
 
-            {/* Right Column: Action/Status */}
-            <div
-                onClick={handleBoxClick}
-                className="p-3 bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center text-center cursor-pointer hover:bg-zinc-800/80 transition-colors relative group/upload shadow-inner"
-            >
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                />
-                <div className="text-5xl mb-3 group-hover/upload:scale-110 transition-transform drop-shadow-lg">📸</div>
-                <div className="text-white font-bold text-lg mb-1">
-                    {selectedFile ? 'Image Selected' : data.status}
+            {/* Right Column: Top Performers List */}
+            <div className="p-4 bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-white font-semibold text-base">Top Performers</h4>
+                    <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded-full border border-yellow-500/20">Real-time</span>
                 </div>
-                <div className="text-zinc-400 text-sm mb-3 px-4">
-                    {selectedFile ? selectedFile : data.description}
+                <div className="space-y-3">
+                    {topPerformers.length === 0 ? (
+                        <div className="text-zinc-500 text-sm text-center py-4">No data available</div>
+                    ) : (
+                        topPerformers.map((worker: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                        #{idx + 1}
+                                    </div>
+                                    <div>
+                                        <div className="text-zinc-200 font-medium text-sm">{worker.name}</div>
+                                        <div className="text-zinc-500 text-xs">{worker.picked} kg picked</div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-emerald-400 font-bold text-sm">₹{worker.cost}</div>
+                                    <div className="text-zinc-500 text-[10px]">Cost</div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
-                {!selectedFile && (
-                    <div className="text-zinc-500 text-xs font-mono bg-white/5 px-2 py-1 rounded border border-white/10">
-                        {data.formats}
-                    </div>
-                )}
             </div>
         </div>
     );
 };
 
-const WeatherPreview = ({ data }: any) => (
-    <div className="grid grid-cols-2 gap-4">
-        {/* Left Column: Current Weather */}
-        <div className="p-4 bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-                <div>
-                    <div className="text-white text-lg font-bold mb-1">Current Weather</div>
-                    <div className="text-zinc-400 text-sm">{data.current.condition}</div>
-                </div>
 
-            </div>
 
-            <div className="flex items-end gap-2 mt-4">
-                <div className="text-5xl font-bold text-white">{data.current.temp}°C</div>
-                <div className="text-zinc-500 mb-1">Feels like {data.current.temp + 2}°</div>
-            </div>
+const WeatherPreview = ({ data: _unused }: any) => {
+    const [data, setData] = useState<any>(null);
 
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-white/10">
-                <div>
-                    <div className="text-zinc-500 text-xs">Humidity</div>
-                    <div className="text-white font-bold">{data.current.humidity}%</div>
-                </div>
-                <div>
-                    <div className="text-zinc-500 text-xs">Wind</div>
-                    <div className="text-white font-bold">{data.current.windSpeed} km/h</div>
-                </div>
-            </div>
+    useEffect(() => {
+        fetch('http://localhost:3001/api/weather?city=Coimbatore')
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    const d = res.data;
+                    const insights = [
+                        { type: 'Irrigation', message: Number(d.current.humidity) > 70 ? "High humidity. Reduce irrigation." : "Moisture levels adequate. No irrigation needed." },
+                        { type: 'Spraying', message: Number(d.current.windSpeed) > 15 ? "High winds. Avoid spraying." : "Conditions favorable for spraying if needed." }
+                    ];
+                    setData({
+                        current: d.current,
+                        forecast: d.forecast.slice(0, 3),
+                        insights: insights
+                    });
+                }
+            })
+            .catch(err => console.error("Weather fetch failed", err));
+    }, []);
+
+    if (!data) return (
+        <div className="h-[300px] flex flex-col items-center justify-center bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <div className="text-zinc-400 font-mono text-xs">Connecting to Weather Station...</div>
         </div>
+    );
 
-        {/* Right Column: Forecast */}
-        <div className="flex flex-col gap-3">
-            {/* 3-Day Forecast */}
-            <div className="grid grid-cols-3 gap-2">
-                {data.forecast.map((day: any, idx: number) => (
-                    <div key={idx} className="p-2 bg-white/5 rounded-lg border border-white/5 text-center">
-                        <div className="text-zinc-400 text-xs font-bold uppercase mb-1">{day.day}</div>
-                        <div className="text-white font-bold text-lg">{day.temp}°</div>
-                        <div className="text-zinc-500 text-xs">{day.condition}</div>
+    return (
+        <div className="grid grid-cols-2 gap-4">
+            {/* Left Column: Current Weather */}
+            <div className="p-4 bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col justify-between">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <div className="text-white text-lg font-bold mb-1">Current Weather</div>
+                        <div className="text-zinc-400 text-sm capitalize">{data.current.description || data.current.condition}</div>
                     </div>
-                ))}
+
+                </div>
+
+                <div className="flex items-end gap-2 mt-4">
+                    <div className="text-5xl font-bold text-white">{data.current.temp}°C</div>
+                    <div className="text-zinc-500 mb-1">Feels like {data.current.temp + 2}°</div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-white/10">
+                    <div>
+                        <div className="text-zinc-500 text-xs">Humidity</div>
+                        <div className="text-white font-bold">{data.current.humidity}%</div>
+                    </div>
+                    <div>
+                        <div className="text-zinc-500 text-xs">Wind</div>
+                        <div className="text-white font-bold">{data.current.windSpeed} km/h</div>
+                    </div>
+                </div>
             </div>
 
-            {/* Insights */}
-            <div className="flex-1 p-3 bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm">
-                <div className="text-zinc-100 font-bold text-sm mb-2">Farming Insights</div>
-                <div className="space-y-2">
-                    {data.insights.map((insight: any, idx: number) => (
-                        <div key={idx} className="flex gap-2 text-xs">
-                            <span className="text-zinc-400 font-bold min-w-[60px]">{insight.type}:</span>
-                            <span className="text-zinc-300">{insight.message}</span>
+            {/* Right Column: Forecast */}
+            <div className="flex flex-col gap-3">
+                {/* 3-Day Forecast */}
+                <div className="grid grid-cols-3 gap-2">
+                    {data.forecast && data.forecast.map((day: any, idx: number) => (
+                        <div key={idx} className="p-2 bg-white/5 rounded-lg border border-white/5 text-center">
+                            <div className="text-zinc-400 text-xs font-bold uppercase mb-1">{day.day}</div>
+                            <div className="text-white font-bold text-lg">{day.temp}°</div>
+                            <div className="text-zinc-500 text-xs capitalize truncate">{day.description || day.condition}</div>
                         </div>
                     ))}
                 </div>
+
+                {/* Insights */}
+                <div className="flex-1 p-3 bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm">
+                    <div className="text-zinc-100 font-bold text-sm mb-2">Farming Insights</div>
+                    <div className="space-y-2">
+                        {data.insights && data.insights.map((insight: any, idx: number) => (
+                            <div key={idx} className="flex gap-2 text-xs">
+                                <span className="text-zinc-400 font-bold min-w-[60px]">{insight.type}:</span>
+                                <span className="text-zinc-300 leading-tight">{insight.message}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 const NewsBillboardPreview = ({ data }: any) => (
     <div className="flex flex-col h-full bg-black/80 border-4 border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative">

@@ -38,12 +38,7 @@ export default function Auth() {
             description: t.featureCards.mlAnalysis.description,
             image: "/images/features/ml-analysis.jpg"
         },
-        {
-            id: 'plantHealth',
-            title: t.featureCards.plantHealth.title,
-            description: t.featureCards.plantHealth.description,
-            image: "/images/features/plant-health.jpg"
-        },
+
         {
             id: 'weather',
             title: t.featureCards.weather.title,

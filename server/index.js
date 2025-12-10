@@ -251,10 +251,115 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+
 // Clean up expired sessions periodically (every hour)
 setInterval(() => {
     db.cleanExpiredSessions();
 }, 60 * 60 * 1000);
+
+// Weather endpoint
+import axios from 'axios';
+
+app.get('/api/weather', async (req, res) => {
+    try {
+        const { city = 'Coimbatore' } = req.query;
+        // User provided key
+        const apiKey = process.env.WEATHER_API_KEY || '46c4e80216734cf86a46ba34b33f7944';
+
+        if (!apiKey) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error: API key missing'
+            });
+        }
+
+        // Fetch current weather and forecast in parallel
+        const [currentWeatherRes, forecastRes] = await Promise.all([
+            axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`),
+            axios.get(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}`)
+        ]);
+
+        const current = currentWeatherRes.data;
+        const forecastList = forecastRes.data.list;
+
+        // Group forecast by date
+        const dailyGroups = {};
+
+        forecastList.forEach(item => {
+            const date = item.dt_txt.split(' ')[0];
+            if (!dailyGroups[date]) {
+                dailyGroups[date] = [];
+            }
+            dailyGroups[date].push(item);
+        });
+
+        const dailyForecast = Object.keys(dailyGroups).map(date => {
+            const dayItems = dailyGroups[date];
+
+            // Find max temp for the day
+            const maxTemp = Math.max(...dayItems.map(i => i.main.temp));
+            const minTemp = Math.min(...dayItems.map(i => i.main.temp));
+
+            // Pick the weather condition that occurs most frequently or usually at noon
+            // Simplified: pick the one at noon (12:00:00) or the middle item
+            const noonItem = dayItems.find(i => i.dt_txt.includes('12:00:00')) || dayItems[Math.floor(dayItems.length / 2)];
+
+            return {
+                date: date,
+                day: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+                temp: Math.round(maxTemp),
+                minTemp: Math.round(minTemp),
+                condition: noonItem.weather[0].main.toLowerCase(),
+                description: noonItem.weather[0].description,
+                icon: noonItem.weather[0].icon
+            };
+        });
+
+        // Current OWM Free API only gives 5 days. 
+        // We will return whatever unique days we found (usually 5 or 6 including today).
+        // To strictly respect "from current day, for next days", 
+        // we usually skip today in forecast if shown in "Current Conditions", 
+        // but user asked for "next 7 days". We will return all available future days.
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        const futureForecast = dailyForecast.filter(d => d.date > todayStr);
+
+        const weatherData = {
+            current: {
+                temp: Math.round(current.main.temp),
+                condition: current.weather[0].main,
+                description: current.weather[0].description,
+                humidity: current.main.humidity,
+                windSpeed: current.wind.speed,
+                icon: current.weather[0].icon,
+                city: current.name,
+                cloudiness: current.clouds.all,
+                pressure: current.main.pressure,
+                visibility: current.visibility,
+                sunrise: current.sys.sunrise,
+                sunset: current.sys.sunset,
+                windDeg: current.wind.deg,
+                rain: current.rain
+            },
+            // Limit to 7 if we magically got more, but usually it's 5.
+            forecast: futureForecast.slice(0, 7)
+        };
+
+        res.json({
+            success: true,
+            data: weatherData
+        });
+
+    } catch (error) {
+        console.error('Weather API error:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch weather data',
+            error: error.response?.data?.message || error.message
+        });
+    }
+});
+
 
 // Start server
 app.listen(PORT, () => {

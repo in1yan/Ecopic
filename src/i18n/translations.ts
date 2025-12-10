@@ -21,10 +21,7 @@ export const translations = {
                 title: "Worker Management",
                 subtitle: "Manage your team"
             },
-            health: {
-                title: "Plant Health AI",
-                subtitle: "Analyze crop health"
-            },
+
             weather: {
                 title: "Weather Station",
                 subtitle: "Forecast & alerts"
@@ -58,10 +55,7 @@ export const translations = {
                 title: "ML-Powered Analysis",
                 description: "Advanced on-board ML model that detects and classifies the maturity of the cotton bolls which increases and simplifies the process of cotton picking, hence providing higher efficiency and more profit to the farmer."
             },
-            plantHealth: {
-                title: "Plant Health Analysis",
-                description: "Built in ML powered cotton plant health analyzer that detects the cotton plant's health with just a photo of the plant, hence providing instant report to the farmer."
-            },
+
             weather: {
                 title: "Weather Forecasting",
                 description: "EcoPick weather forecasting system is handcrafted and specialized for cotton cultivation. It provides accurate and suitable weather analysis with respect to cotton cultivation while providing immediate alerts and notifications about upcoming rains/storms and other weather conditions, helping farmers save their crops before disaster happens."
@@ -103,10 +97,7 @@ export const translations = {
                 title: "कार्यकर्ता प्रबंधन",
                 subtitle: "अपनी टीम का प्रबंधन करें"
             },
-            health: {
-                title: "पौधे स्वास्थ्य AI",
-                subtitle: "फसल स्वास्थ्य का विश्लेषण करें"
-            },
+
             weather: {
                 title: "मौसम स्टेशन",
                 subtitle: "पूर्वानुमान और अलर्ट"
@@ -140,10 +131,7 @@ export const translations = {
                 title: "ML-संचालित विश्लेषण",
                 description: "उन्नत ऑन-बोर्ड ML मॉडल जो कपास के बोलों की परिपक्वता का पता लगाता है और वर्गीकृत करता है, जो कपास तोड़ने की प्रक्रिया को बढ़ाता और सरल बनाता है, इस प्रकार किसान को उच्च दक्षता और अधिक लाभ प्रदान करता है।"
             },
-            plantHealth: {
-                title: "पौधे स्वास्थ्य विश्लेषण",
-                description: "अंतर्निहित ML संचालित कपास पौधे स्वास्थ्य विश्लेषक जो पौधे की केवल एक तस्वीर से पौधे के स्वास्थ्य का पता लगाता है, इस प्रकार किसान को तुरंत रिपोर्ट प्रदान करता है।"
-            },
+
             weather: {
                 title: "मौसम पूर्वानुमान",
                 description: "EcoPick मौसम पूर्वानुमान प्रणाली कपास की खेती के लिए विशेष रूप से तैयार की गई है। यह कपास की खेती के संबंध में सटीक और उपयुक्त मौसम विश्लेषण प्रदान करती है, साथ ही आने वाली बारिश/तूफान और अन्य मौसम स्थितियों के बारे में तत्काल अलर्ट और सूचनाएं प्रदान करती है, जिससे किसानों को आपदा होने से पहले अपनी फसलों को बचाने में मदद मिलती है।"

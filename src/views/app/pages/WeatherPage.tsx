@@ -1,16 +1,59 @@
 import { motion } from "framer-motion";
-import { Sun, Cloud, CloudRain, Haze, Droplets, Wind, Sprout, ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Sun, Cloud, CloudRain, Haze, Droplets, Wind, ArrowLeft, CloudLightning, Snowflake } from "lucide-react";
 
 export const WeatherPage = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
-    const forecast = [
-        { day: 'Fri', temp: 16, condition: 'sunny', icon: <Sun className="w-8 h-8 text-yellow-500" /> },
-        { day: 'Sat', temp: 23, condition: 'sunny', icon: <Sun className="w-8 h-8 text-yellow-500" /> },
-        { day: 'Sun', temp: 24, condition: 'haze', icon: <Haze className="w-8 h-8 text-orange-300" /> },
-        { day: 'Mon', temp: 25, condition: 'cloudy', icon: <Cloud className="w-8 h-8 text-gray-400" /> },
-        { day: 'Tue', temp: 25, condition: 'cloudy', icon: <Cloud className="w-8 h-8 text-gray-400" /> },
-        { day: 'Wed', temp: 26, condition: 'rainy', icon: <CloudRain className="w-8 h-8 text-blue-400" /> },
-        { day: 'Thu', temp: 26, condition: 'rainy', icon: <CloudRain className="w-8 h-8 text-blue-400" /> }
-    ];
+    const [weatherData, setWeatherData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        const fetchWeather = async () => {
+            try {
+                const response = await fetch('http://localhost:3001/api/weather?city=Coimbatore');
+                const data = await response.json();
+
+                if (data.success) {
+                    setWeatherData(data.data);
+                } else {
+                    setError('Failed to load weather data');
+                }
+            } catch (err) {
+                console.error(err);
+                setError('Network error connecting to weather service');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchWeather();
+    }, []);
+
+    const getWeatherIcon = (condition: string) => {
+        const c = condition.toLowerCase();
+        if (c.includes('clear')) return <Sun className="w-8 h-8 text-yellow-500" />;
+        if (c.includes('cloud')) return <Cloud className="w-8 h-8 text-gray-400" />;
+        if (c.includes('rain') || c.includes('drizzle')) return <CloudRain className="w-8 h-8 text-blue-400" />;
+        if (c.includes('thunder')) return <CloudLightning className="w-8 h-8 text-purple-400" />;
+        if (c.includes('snow')) return <Snowflake className="w-8 h-8 text-cyan-200" />;
+        return <Haze className="w-8 h-8 text-orange-300" />;
+    };
+
+    const getLargeIcon = (condition: string) => {
+        const c = condition.toLowerCase();
+        if (c.includes('clear')) return <Sun className="w-32 h-32 text-yellow-500" />;
+        if (c.includes('cloud')) return <Cloud className="w-32 h-32 text-gray-400" />;
+        if (c.includes('rain') || c.includes('drizzle')) return <CloudRain className="w-32 h-32 text-blue-400" />;
+        if (c.includes('thunder')) return <CloudLightning className="w-32 h-32 text-purple-400" />;
+        if (c.includes('snow')) return <Snowflake className="w-32 h-32 text-cyan-200" />;
+        return <Haze className="w-32 h-32 text-zinc-400" />;
+    };
+
+    if (loading) return <div className="p-8 text-white">Loading weather data...</div>;
+    if (error) return <div className="p-8 text-red-400">{error}</div>;
+    if (!weatherData) return null;
+
+    const { current, forecast } = weatherData;
 
     return (
         <motion.div
@@ -22,7 +65,7 @@ export const WeatherPage = ({ onNavigate }: { onNavigate: (page: string) => void
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-5xl font-bold text-white mb-2 font-['Orbitron']">Weather Station</h1>
-                    <p className="text-zinc-400 text-lg">Real-time weather monitoring for precision farming</p>
+                    <p className="text-zinc-400 text-lg">Real-time weather monitoring for precision farming (Coimbatore)</p>
                 </div>
                 <button
                     onClick={() => onNavigate('dashboard')}
@@ -40,11 +83,11 @@ export const WeatherPage = ({ onNavigate }: { onNavigate: (page: string) => void
 
                     <div className="flex items-center justify-between">
                         <div>
-                            <div className="text-7xl font-bold text-white mb-2">17°C</div>
-                            <div className="text-2xl text-zinc-400">Haze</div>
+                            <div className="text-7xl font-bold text-white mb-2">{current.temp}°C</div>
+                            <div className="text-2xl text-zinc-400 capitalize">{current.description}</div>
                         </div>
                         <div className="p-4 rounded-3xl bg-white/5">
-                            <Haze className="w-32 h-32 text-zinc-400" />
+                            {getLargeIcon(current.condition)}
                         </div>
                     </div>
 
@@ -55,7 +98,7 @@ export const WeatherPage = ({ onNavigate }: { onNavigate: (page: string) => void
                             </div>
                             <div>
                                 <div className="text-zinc-400 text-sm mb-1">Humidity</div>
-                                <div className="text-3xl font-bold text-white">63%</div>
+                                <div className="text-3xl font-bold text-white">{current.humidity}%</div>
                             </div>
                         </div>
                         <div className="p-4 bg-white/5 rounded-xl flex items-center gap-4">
@@ -64,48 +107,130 @@ export const WeatherPage = ({ onNavigate }: { onNavigate: (page: string) => void
                             </div>
                             <div>
                                 <div className="text-zinc-400 text-sm mb-1">Wind Speed</div>
-                                <div className="text-3xl font-bold text-white">4 km/h</div>
+                                <div className="text-3xl font-bold text-white">{current.windSpeed} km/h</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Farming Insights */}
-                <div className="p-8 bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-white to-green-500 rounded-t-2xl" />
-                    <h2 className="text-2xl font-bold text-white mb-6 mt-4">Farming Insight</h2>
-
-                    <div className="space-y-4">
-                        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-                            <div className="flex items-center gap-2 text-blue-400 font-semibold mb-2">
-                                <Droplets className="w-5 h-5" />
-                                Irrigation
-                            </div>
-                            <p className="text-zinc-300 text-sm">Moisture levels are adequate. No irrigation needed.</p>
+                {/* Cotton Field Analytics */}
+                <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div className="p-6 bg-black/30 border border-white/10 rounded-2xl">
+                        <div className="text-zinc-400 text-sm mb-2">Cloud Cover</div>
+                        <div className="flex items-end gap-2">
+                            <span className="text-3xl font-bold text-white">{current.cloudiness}%</span>
+                            <span className="text-sm text-zinc-500 mb-1">
+                                {current.cloudiness > 50 ? "Overcast" : "Clear Sky"}
+                            </span>
                         </div>
-                        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                            <div className="flex items-center gap-2 text-green-400 font-semibold mb-2">
-                                <Sprout className="w-5 h-5" />
-                                Spraying
-                            </div>
-                            <p className="text-zinc-300 text-sm">Conditions are favorable for spraying if needed.</p>
+                        <div className="mt-2 text-xs text-zinc-500">
+                            Photosynthesis Rate: {current.cloudiness > 50 ? "Moderate" : "High"}
+                        </div>
+                    </div>
+                    <div className="p-6 bg-black/30 border border-white/10 rounded-2xl">
+                        <div className="text-zinc-400 text-sm mb-2">Pressure</div>
+                        <div className="flex items-end gap-2">
+                            <span className="text-3xl font-bold text-white">{current.pressure}</span>
+                            <span className="text-sm text-zinc-500 mb-1">hPa</span>
+                        </div>
+                        <div className="mt-2 text-xs text-zinc-500">
+                            {current.pressure < 1000 ? "Low Pressure System" : "Stable Conditions"}
+                        </div>
+                    </div>
+                    <div className="p-6 bg-black/30 border border-white/10 rounded-2xl">
+                        <div className="text-zinc-400 text-sm mb-2">Visibility</div>
+                        <div className="flex items-end gap-2">
+                            <span className="text-3xl font-bold text-white">{(current.visibility / 1000).toFixed(1)}</span>
+                            <span className="text-sm text-zinc-500 mb-1">km</span>
+                        </div>
+                        <div className="mt-2 text-xs text-zinc-500">
+                            Aerial Survey Suitability: {current.visibility > 5000 ? "Good" : "Poor"}
+                        </div>
+                    </div>
+                    <div className="p-6 bg-black/30 border border-white/10 rounded-2xl">
+                        <div className="text-zinc-400 text-sm mb-2">Wind Direction</div>
+                        <div className="flex items-end gap-2">
+                            <span className="text-3xl font-bold text-white">{current.windDeg}°</span>
+                            <span className="text-sm text-zinc-500 mb-1">
+                                {current.windDeg > 337.5 || current.windDeg <= 22.5 ? 'N' :
+                                    current.windDeg > 22.5 && current.windDeg <= 67.5 ? 'NE' :
+                                        current.windDeg > 67.5 && current.windDeg <= 112.5 ? 'E' :
+                                            current.windDeg > 112.5 && current.windDeg <= 157.5 ? 'SE' :
+                                                current.windDeg > 157.5 && current.windDeg <= 202.5 ? 'S' :
+                                                    current.windDeg > 202.5 && current.windDeg <= 247.5 ? 'SW' :
+                                                        current.windDeg > 247.5 && current.windDeg <= 292.5 ? 'W' : 'NW'}
+                            </span>
+                        </div>
+                        <div className="mt-2 text-xs text-zinc-500">
+                            Spray Drift Risk: {current.windSpeed > 10 ? "High" : "Low"}
                         </div>
                     </div>
                 </div>
+
+                <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {/* Cotton Specific Insights */}
+                    <div className="p-8 bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl relative overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-white to-green-500 rounded-t-2xl" />
+                        <h2 className="text-xl font-bold text-white mb-4 mt-2">Cotton Picking</h2>
+                        <div className={`p-4 rounded-xl border ${current.humidity < 60 && current.rain === undefined ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                            <div className={`font-bold mb-2 ${current.humidity < 60 && current.rain === undefined ? 'text-green-400' : 'text-red-400'}`}>
+                                {current.humidity < 60 && current.rain === undefined ? "Conditions Optimal" : "Conditions Poor"}
+                            </div>
+                            <p className="text-zinc-400 text-sm">
+                                {current.humidity < 60
+                                    ? "Low humidity favors clean picking. Cotton moisture content likely standard."
+                                    : "High humidity or rain risk. Picking may result in high moisture content."}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="p-8 bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl relative overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-white to-green-500 rounded-t-2xl" />
+                        <h2 className="text-xl font-bold text-white mb-4 mt-2">Pest & Disease</h2>
+                        <div className={`p-4 rounded-xl border ${current.humidity > 80 && current.temp > 25 ? 'bg-red-500/10 border-red-500/30' : 'bg-green-500/10 border-green-500/30'}`}>
+                            <div className={`font-bold mb-2 ${current.humidity > 80 && current.temp > 25 ? 'text-red-400' : 'text-green-400'}`}>
+                                {current.humidity > 80 && current.temp > 25 ? "High Risk Alert" : "Low Risk"}
+                            </div>
+                            <p className="text-zinc-400 text-sm">
+                                {current.humidity > 80 && current.temp > 25
+                                    ? "Warm and humid conditions favor Bollworm and Aphid growth. Monitor closely."
+                                    : "Current dry conditions are unfavorable for most fungal diseases."}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="p-8 bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl relative overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-white to-green-500 rounded-t-2xl" />
+                        <h2 className="text-xl font-bold text-white mb-4 mt-2">Spraying Window</h2>
+                        <div className={`p-4 rounded-xl border ${current.windSpeed < 15 ? 'bg-green-500/10 border-green-500/30' : 'bg-yellow-500/10 border-yellow-500/30'}`}>
+                            <div className={`font-bold mb-2 ${current.windSpeed < 15 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                {current.windSpeed < 15 ? "Favorable" : "Caution"}
+                            </div>
+                            <p className="text-zinc-400 text-sm">
+                                {current.windSpeed < 15
+                                    ? `Wind speed ${current.windSpeed} km/h is safe for aerial or ground spraying.`
+                                    : `High winds (${current.windSpeed} km/h) may cause drift. Avoid herbicides.`}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             {/* 7-Day Forecast */}
-            <div className="p-8 bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl relative overflow-hidden">
+            <div className="md:col-span-3 p-8 bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl relative overflow-hidden mt-8">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-white to-green-500 rounded-t-2xl" />
-                <h2 className="text-2xl font-bold text-white mb-6 mt-4">7-Day Forecast</h2>
+                <h2 className="text-2xl font-bold text-white mb-6 mt-4">Weather Forecast</h2>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                    {forecast.map((day, idx) => (
-                        <div key={idx} className="p-4 bg-white/5 rounded-xl text-center hover:bg-white/10 transition-all flex flex-col items-center justify-center">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-4">
+                    {forecast.map((day: any, idx: number) => (
+                        <div key={idx} className="p-4 bg-white/5 rounded-xl text-center hover:bg-white/10 transition-all flex flex-col items-center justify-center min-h-[160px]">
                             <div className="text-zinc-400 font-semibold mb-2">{day.day}</div>
-                            <div className="mb-2 p-2 bg-white/5 rounded-full">{day.icon}</div>
+                            <div className="mb-2 p-2 bg-white/5 rounded-full">
+                                {getWeatherIcon(day.condition)}
+                            </div>
                             <div className="text-2xl font-bold text-white mb-1">{day.temp}°C</div>
-                            <div className="text-zinc-500 text-sm capitalize">{day.condition}</div>
+                            <div className="text-zinc-500 text-xs text-center capitalize px-1">{day.description}</div>
                         </div>
                     ))}
                 </div>
