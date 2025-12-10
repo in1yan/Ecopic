@@ -457,23 +457,117 @@ const WeatherPreview = ({ data: _unused }: any) => {
     const [data, setData] = useState<any>(null);
 
     useEffect(() => {
-        fetch('http://localhost:3001/api/weather?city=Coimbatore')
-            .then(res => res.json())
-            .then(res => {
-                if (res.success) {
-                    const d = res.data;
-                    const insights = [
-                        { type: 'Irrigation', message: Number(d.current.humidity) > 70 ? "High humidity. Reduce irrigation." : "Moisture levels adequate. No irrigation needed." },
-                        { type: 'Spraying', message: Number(d.current.windSpeed) > 15 ? "High winds. Avoid spraying." : "Conditions favorable for spraying if needed." }
-                    ];
-                    setData({
-                        current: d.current,
-                        forecast: d.forecast.slice(0, 3),
-                        insights: insights
+        console.log('🌤️ [FeatureScroll WeatherPreview] Initializing weather fetch...');
+        console.log('🌤️ [FeatureScroll] Geolocation available:', !!navigator.geolocation);
+        
+        // Try to get user's current location first
+        if (navigator.geolocation) {
+            console.log('🌤️ [FeatureScroll] Requesting geolocation...');
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    console.log('✅ [FeatureScroll] Geolocation success:', { latitude, longitude });
+                    const url = `http://localhost:3001/api/weather?lat=${latitude}&lon=${longitude}`;
+                    console.log('🌤️ [FeatureScroll] Fetching weather with URL:', url);
+                    
+                    fetch(url)
+                        .then(res => {
+                            console.log('📡 [FeatureScroll] Weather API response status:', res.status);
+                            return res.json();
+                        })
+                        .then(res => {
+                            console.log('📦 [FeatureScroll] Weather API response data:', res);
+                            if (res.success) {
+                                const d = res.data;
+                                const insights = [
+                                    { type: 'Irrigation', message: Number(d.current.humidity) > 70 ? "High humidity. Reduce irrigation." : "Moisture levels adequate. No irrigation needed." },
+                                    { type: 'Spraying', message: Number(d.current.windSpeed) > 15 ? "High winds. Avoid spraying." : "Conditions favorable for spraying if needed." }
+                                ];
+                                setData({
+                                    current: d.current,
+                                    forecast: d.forecast.slice(0, 3),
+                                    insights: insights,
+                                    city: d.current.city || 'Your Location'
+                                });
+                                console.log('✅ [FeatureScroll] Weather data set successfully for:', d.current.city);
+                            }
+                        })
+                        .catch(err => {
+                            console.error("❌ [FeatureScroll] Weather fetch failed:", err);
+                            console.error("❌ [FeatureScroll] Error details:", err.message, err.stack);
+                        });
+                },
+                (error) => {
+                    // Fallback to default city if geolocation fails
+                    console.error('❌ [FeatureScroll] Geolocation error:', {
+                        code: error.code,
+                        message: error.message,
+                        PERMISSION_DENIED: error.code === 1,
+                        POSITION_UNAVAILABLE: error.code === 2,
+                        TIMEOUT: error.code === 3
                     });
+                    console.log('🔄 [FeatureScroll] Falling back to Coimbatore...');
+                    fetch('http://localhost:3001/api/weather?city=Coimbatore')
+                        .then(res => {
+                            console.log('📡 [FeatureScroll Fallback] Weather API response status:', res.status);
+                            return res.json();
+                        })
+                        .then(res => {
+                            console.log('📦 [FeatureScroll Fallback] Weather API response data:', res);
+                            if (res.success) {
+                                const d = res.data;
+                                const insights = [
+                                    { type: 'Irrigation', message: Number(d.current.humidity) > 70 ? "High humidity. Reduce irrigation." : "Moisture levels adequate. No irrigation needed." },
+                                    { type: 'Spraying', message: Number(d.current.windSpeed) > 15 ? "High winds. Avoid spraying." : "Conditions favorable for spraying if needed." }
+                                ];
+                                setData({
+                                    current: d.current,
+                                    forecast: d.forecast.slice(0, 3),
+                                    insights: insights,
+                                    city: d.current.city || 'Coimbatore'
+                                });
+                                console.log('✅ [FeatureScroll Fallback] Weather data set successfully for:', d.current.city);
+                            }
+                        })
+                        .catch(err => {
+                            console.error("❌ [FeatureScroll Fallback] Weather fetch failed:", err);
+                        });
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 300000
                 }
-            })
-            .catch(err => console.error("Weather fetch failed", err));
+            );
+        } else {
+            // Geolocation not supported, use default city
+            console.warn('⚠️ [FeatureScroll] Geolocation not supported by browser');
+            fetch('http://localhost:3001/api/weather?city=Coimbatore')
+                .then(res => {
+                    console.log('📡 [FeatureScroll No-Geo] Weather API response status:', res.status);
+                    return res.json();
+                })
+                .then(res => {
+                    console.log('📦 [FeatureScroll No-Geo] Weather API response data:', res);
+                    if (res.success) {
+                        const d = res.data;
+                        const insights = [
+                            { type: 'Irrigation', message: Number(d.current.humidity) > 70 ? "High humidity. Reduce irrigation." : "Moisture levels adequate. No irrigation needed." },
+                            { type: 'Spraying', message: Number(d.current.windSpeed) > 15 ? "High winds. Avoid spraying." : "Conditions favorable for spraying if needed." }
+                        ];
+                        setData({
+                            current: d.current,
+                            forecast: d.forecast.slice(0, 3),
+                            insights: insights,
+                            city: d.current.city || 'Coimbatore'
+                        });
+                        console.log('✅ [FeatureScroll No-Geo] Weather data set successfully for:', d.current.city);
+                    }
+                })
+                .catch(err => {
+                    console.error("❌ [FeatureScroll No-Geo] Weather fetch failed:", err);
+                });
+        }
     }, []);
 
     if (!data) return (
@@ -489,7 +583,7 @@ const WeatherPreview = ({ data: _unused }: any) => {
             <div className="p-4 bg-zinc-900/60 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col justify-between">
                 <div className="flex justify-between items-start">
                     <div>
-                        <div className="text-white text-lg font-bold mb-1">Current Weather</div>
+                        <div className="text-white text-lg font-bold mb-1">{data.city || 'Current Weather'}</div>
                         <div className="text-zinc-400 text-sm capitalize">{data.current.description || data.current.condition}</div>
                     </div>
 

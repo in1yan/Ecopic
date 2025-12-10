@@ -3,6 +3,7 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import connectDB from './config/db.js';
 import db from './database.js';
 
 dotenv.config();
@@ -63,7 +64,7 @@ app.post('/api/auth/register', async (req, res) => {
         }
 
         // Check if user already exists
-        const existingUser = db.findUserByEmail(email);
+        const existingUser = await db.findUserByEmail(email);
         if (existingUser) {
             return res.status(409).json({
                 success: false,
@@ -75,10 +76,10 @@ app.post('/api/auth/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create user
-        const user = db.createUser(fullName, email, hashedPassword);
+        const user = await db.createUser(fullName, email, hashedPassword);
 
         // Generate token
-        const token = generateToken(user.id, email);
+        const token = generateToken(user._id, email);
 
         res.status(201).json({
             success: true,
@@ -86,7 +87,7 @@ app.post('/api/auth/register', async (req, res) => {
             data: {
                 token,
                 user: {
-                    id: user.id,
+                    id: user._id,
                     fullName: user.fullName,
                     email: user.email
                 }
@@ -115,7 +116,7 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         // Find user
-        const user = db.findUserByEmail(email);
+        const user = await db.findUserByEmail(email);
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -133,12 +134,12 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         // Update last login
-        db.updateUserLastLogin(user.id);
+        await db.updateUserLastLogin(user._id);
 
         // Generate token with extended expiry if remember me is checked
         const tokenExpiry = rememberMe ? '30d' : '7d';
         const token = jwt.sign(
-            { userId: user.id, email: user.email },
+            { userId: user._id, email: user.email },
             JWT_SECRET,
             { expiresIn: tokenExpiry }
         );
@@ -147,7 +148,7 @@ app.post('/api/auth/login', async (req, res) => {
         if (rememberMe) {
             const expiresAt = new Date();
             expiresAt.setDate(expiresAt.getDate() + 30);
-            db.createSession(user.id, token, expiresAt.toISOString());
+            await db.createSession(user._id, token, expiresAt);
         }
 
         res.json({
@@ -156,7 +157,7 @@ app.post('/api/auth/login', async (req, res) => {
             data: {
                 token,
                 user: {
-                    id: user.id,
+                    id: user._id,
                     fullName: user.fullName,
                     email: user.email
                 }
@@ -172,7 +173,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Verify token endpoint
-app.post('/api/auth/verify', (req, res) => {
+app.post('/api/auth/verify', async (req, res) => {
     try {
         const { token } = req.body;
 
@@ -192,7 +193,7 @@ app.post('/api/auth/verify', (req, res) => {
         }
 
         // Get user data
-        const user = db.findUserById(decoded.userId);
+        const user = await db.findUserById(decoded.userId);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -204,7 +205,7 @@ app.post('/api/auth/verify', (req, res) => {
             success: true,
             data: {
                 user: {
-                    id: user.id,
+                    id: user._id,
                     fullName: user.fullName,
                     email: user.email
                 }
@@ -220,13 +221,13 @@ app.post('/api/auth/verify', (req, res) => {
 });
 
 // Logout endpoint
-app.post('/api/auth/logout', (req, res) => {
+app.post('/api/auth/logout', async (req, res) => {
     try {
         const { token } = req.body;
 
         if (token) {
             // Remove session from database if it exists
-            db.deleteSession(token);
+            await db.deleteSession(token);
         }
 
         res.json({
@@ -253,8 +254,8 @@ app.get('/api/health', (req, res) => {
 
 
 // Clean up expired sessions periodically (every hour)
-setInterval(() => {
-    db.cleanExpiredSessions();
+setInterval(async () => {
+    await db.cleanExpiredSessions();
 }, 60 * 60 * 1000);
 
 // Weather endpoint
@@ -262,21 +263,48 @@ import axios from 'axios';
 
 app.get('/api/weather', async (req, res) => {
     try {
-        const { city = 'Coimbatore' } = req.query;
+        const { city, lat, lon } = req.query;
+        
+        // Log incoming request parameters
+        console.log('🌤️  Weather API Request:', {
+            city: city || 'not provided',
+            lat: lat || 'not provided',
+            lon: lon || 'not provided',
+            timestamp: new Date().toISOString()
+        });
+
         // User provided key
         const apiKey = process.env.WEATHER_API_KEY || '46c4e80216734cf86a46ba34b33f7944';
 
         if (!apiKey) {
+            console.error('❌ Weather API Key missing');
             return res.status(500).json({
                 success: false,
                 message: 'Server configuration error: API key missing'
             });
         }
 
+        let weatherUrl, forecastUrl;
+        let locationMethod = '';
+
+        // Priority: Use lat/lon if provided (from geolocation), otherwise fall back to city
+        if (lat && lon) {
+            locationMethod = 'coordinates';
+            weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+            forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+            console.log('📍 Using geolocation coordinates:', { lat, lon });
+        } else {
+            locationMethod = 'city';
+            const cityName = city || 'Coimbatore'; // Fallback to Coimbatore if no location provided
+            weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&units=metric&appid=${apiKey}`;
+            forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityName}&units=metric&appid=${apiKey}`;
+            console.log('🏙️  Using city name:', cityName, '(coordinates not provided)');
+        }
+
         // Fetch current weather and forecast in parallel
         const [currentWeatherRes, forecastRes] = await Promise.all([
-            axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`),
-            axios.get(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}`)
+            axios.get(weatherUrl),
+            axios.get(forecastUrl)
         ]);
 
         const current = currentWeatherRes.data;
@@ -345,13 +373,24 @@ app.get('/api/weather', async (req, res) => {
             forecast: futureForecast.slice(0, 7)
         };
 
+        console.log('✅ Weather data fetched successfully:', {
+            location: weatherData.current.city,
+            method: locationMethod,
+            temp: weatherData.current.temp,
+            condition: weatherData.current.condition
+        });
+
         res.json({
             success: true,
             data: weatherData
         });
 
     } catch (error) {
-        console.error('Weather API error:', error.message);
+        console.error('❌ Weather API error:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+        });
         res.status(500).json({
             success: false,
             message: 'Failed to fetch weather data',
@@ -362,8 +401,9 @@ app.get('/api/weather', async (req, res) => {
 
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`🚀 EcoPick Backend Server running on http://localhost:${PORT}`);
-    console.log(`📊 Database: JSON file (database.json)`);
-    console.log(`🔐 JWT Authentication enabled`);
+connectDB().then(() => {
+    app.listen(PORT, () => {
+        console.log(`🚀 EcoPick Backend Server running on http://localhost:${PORT}`);
+        console.log(`🔐 JWT Authentication enabled`);
+    });
 });

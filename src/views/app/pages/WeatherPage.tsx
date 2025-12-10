@@ -6,22 +6,103 @@ export const WeatherPage = ({ onNavigate }: { onNavigate: (page: string) => void
     const [weatherData, setWeatherData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [locationName, setLocationName] = useState('');
 
     useEffect(() => {
         const fetchWeather = async () => {
+            console.log('🌤️ [WeatherPage] Initializing weather fetch...');
+            console.log('🌤️ [WeatherPage] Geolocation available:', !!navigator.geolocation);
+            
             try {
-                const response = await fetch('http://localhost:3001/api/weather?city=Coimbatore');
-                const data = await response.json();
+                // Try to get user's current location
+                if (navigator.geolocation) {
+                    console.log('🌤️ [WeatherPage] Requesting geolocation...');
+                    navigator.geolocation.getCurrentPosition(
+                        async (position) => {
+                            const { latitude, longitude } = position.coords;
+                            console.log('✅ [WeatherPage] Geolocation success:', { latitude, longitude });
+                            const url = `http://localhost:3001/api/weather?lat=${latitude}&lon=${longitude}`;
+                            console.log('🌤️ [WeatherPage] Fetching weather with URL:', url);
+                            
+                            try {
+                                const response = await fetch(url);
+                                console.log('📡 [WeatherPage] Weather API response status:', response.status);
+                                const data = await response.json();
+                                console.log('📦 [WeatherPage] Weather API response data:', data);
 
-                if (data.success) {
-                    setWeatherData(data.data);
+                                if (data.success) {
+                                    setWeatherData(data.data);
+                                    setLocationName(data.data.current.city || 'Your Location');
+                                    console.log('✅ [WeatherPage] Weather data set successfully for:', data.data.current.city);
+                                } else {
+                                    console.error('❌ [WeatherPage] API returned success=false');
+                                    setError('Failed to load weather data');
+                                }
+                            } catch (err) {
+                                console.error('❌ [WeatherPage] Fetch error:', err);
+                                setError('Network error connecting to weather service');
+                            } finally {
+                                setLoading(false);
+                            }
+                        },
+                        async (err) => {
+                            // If geolocation fails, fall back to default city
+                            console.error('❌ [WeatherPage] Geolocation error:', {
+                                code: err.code,
+                                message: err.message,
+                                PERMISSION_DENIED: err.code === 1,
+                                POSITION_UNAVAILABLE: err.code === 2,
+                                TIMEOUT: err.code === 3
+                            });
+                            console.log('🔄 [WeatherPage] Falling back to Coimbatore...');
+                            try {
+                                const response = await fetch('http://localhost:3001/api/weather?city=Coimbatore');
+                                console.log('📡 [WeatherPage Fallback] Weather API response status:', response.status);
+                                const data = await response.json();
+                                console.log('📦 [WeatherPage Fallback] Weather API response data:', data);
+
+                                if (data.success) {
+                                    setWeatherData(data.data);
+                                    setLocationName(data.data.current.city || 'Coimbatore');
+                                    console.log('✅ [WeatherPage Fallback] Weather data set successfully for:', data.data.current.city);
+                                } else {
+                                    console.error('❌ [WeatherPage Fallback] API returned success=false');
+                                    setError('Failed to load weather data');
+                                }
+                            } catch (err) {
+                                console.error('❌ [WeatherPage Fallback] Fetch error:', err);
+                                setError('Network error connecting to weather service');
+                            } finally {
+                                setLoading(false);
+                            }
+                        },
+                        {
+                            enableHighAccuracy: false,
+                            timeout: 10000,
+                            maximumAge: 300000
+                        }
+                    );
                 } else {
-                    setError('Failed to load weather data');
+                    // Geolocation not supported, use default city
+                    console.warn('⚠️ [WeatherPage] Geolocation not supported by browser');
+                    const response = await fetch('http://localhost:3001/api/weather?city=Coimbatore');
+                    console.log('📡 [WeatherPage No-Geo] Weather API response status:', response.status);
+                    const data = await response.json();
+                    console.log('📦 [WeatherPage No-Geo] Weather API response data:', data);
+
+                    if (data.success) {
+                        setWeatherData(data.data);
+                        setLocationName(data.data.current.city || 'Coimbatore');
+                        console.log('✅ [WeatherPage No-Geo] Weather data set successfully for:', data.data.current.city);
+                    } else {
+                        console.error('❌ [WeatherPage No-Geo] API returned success=false');
+                        setError('Failed to load weather data');
+                    }
+                    setLoading(false);
                 }
             } catch (err) {
-                console.error(err);
+                console.error('❌ [WeatherPage] Top-level error:', err);
                 setError('Network error connecting to weather service');
-            } finally {
                 setLoading(false);
             }
         };
@@ -65,7 +146,7 @@ export const WeatherPage = ({ onNavigate }: { onNavigate: (page: string) => void
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-5xl font-bold text-white mb-2 font-['Orbitron']">Weather Station</h1>
-                    <p className="text-zinc-400 text-lg">Real-time weather monitoring for precision farming (Coimbatore)</p>
+                    <p className="text-zinc-400 text-lg">Real-time weather monitoring for precision farming {locationName && `(${locationName})`}</p>
                 </div>
                 <button
                     onClick={() => onNavigate('dashboard')}
