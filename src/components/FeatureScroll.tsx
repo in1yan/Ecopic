@@ -3,6 +3,9 @@ import { useRef, useState, useEffect } from "react";
 import { useWorkerContext } from "@/context/WorkerContext";
 import { LayoutDashboard, Tractor, Users, CloudSun, LucideIcon, Bell, Wrench, CheckCircle, AlertTriangle, Radio, TrendingUp, Globe, Activity } from "lucide-react";
 import { dashboardService } from "@/services/dashboardService";
+import { workersService } from "@/services/workersService";
+import { machinesService } from "@/services/machinesService";
+import { getAllNews } from "@/services/ecoConnectService";
 
 const GradientIcon = ({ icon: Icon, id, from, to }: { icon: LucideIcon, id: string, from: string, to: string }) => (
     <div className="relative flex items-center justify-center">
@@ -109,42 +112,145 @@ export const features = [
 
 export const FeatureScroll = ({ onSelectFeature, containerRef }: { onSelectFeature: (feature: typeof features[0]) => void, containerRef: React.RefObject<HTMLDivElement> }) => {
     const [dashboardData, setDashboardData] = useState<any>(null);
+    const [machinesData, setMachinesData] = useState<any>(null);
+    const [workersData, setWorkersData] = useState<any>(null);
+    const [newsData, setNewsData] = useState<any>(null);
 
     useEffect(() => {
-        // Fetch real dashboard data
-        const fetchDashboardData = async () => {
+        // Fetch real data from all services
+        const fetchAllData = async () => {
             try {
-                const [stats, inventory] = await Promise.all([
-                    dashboardService.getStats(),
-                    dashboardService.getInventory()
-                ]);
+                // Check if user is authenticated
+                const token = localStorage.getItem('ecopick_auth_token');
+                
+                // Fetch dashboard data
+                if (token) {
+                    try {
+                        const [stats, inventory] = await Promise.all([
+                            dashboardService.getStats(),
+                            dashboardService.getInventory()
+                        ]);
 
-                setDashboardData({
-                    revenue: { amount: '₹12.5L', label: 'Monthly Revenue', change: '+15%' },
-                    profit: { amount: '₹8.3L', label: 'Net Profit', change: '+24%' },
-                    workers: { total: stats.totalWorkers.count, change: stats.totalWorkers.change },
-                    machines: { active: stats.activeMachines.count, online: 6, change: stats.activeMachines.change },
-                    yield: { amount: `${stats.todaysYield.count} ${stats.todaysYield.unit}`, label: stats.todaysYield.description },
-                    bags: { count: stats.cottonBags.count, label: stats.cottonBags.description, change: stats.cottonBags.change },
-                    market: { price: '₹6,200/q', trend: '+2.4%', status: 'High Demand' },
-                    inventory: { 
-                        current: `${inventory.currentStock}q`, 
-                        capacity: `${inventory.maxCapacity}q`, 
-                        nextDelivery: 'Tomorrow' 
+                        console.log('Dashboard stats fetched:', stats);
+                        console.log('Inventory fetched:', inventory);
+
+                        setDashboardData({
+                            revenue: { 
+                                amount: stats.monthlyRevenue?.amount || '₹0', 
+                                label: 'Monthly Revenue', 
+                                change: stats.monthlyRevenue?.change || '0%' 
+                            },
+                            profit: { 
+                                amount: stats.netProfit?.amount || '₹0', 
+                                label: 'Net Profit', 
+                                change: stats.netProfit?.change || '0%' 
+                            },
+                            workers: { total: stats.totalWorkers.count, change: stats.totalWorkers.change },
+                            machines: { active: stats.activeMachines.count, online: 6, change: stats.activeMachines.change },
+                            yield: { amount: `${stats.todaysYield.count} ${stats.todaysYield.unit}`, label: stats.todaysYield.description },
+                            bags: { count: stats.cottonBags.count, label: stats.cottonBags.description, change: stats.cottonBags.change },
+                            market: { price: '₹6,200/q', trend: '+2.4%', status: 'High Demand' },
+                            inventory: { 
+                                current: `${inventory.currentStock}q`, 
+                                capacity: `${inventory.maxCapacity}q`, 
+                                nextDelivery: 'Tomorrow' 
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error fetching dashboard data:', error);
                     }
-                });
+
+                    // Fetch machines data
+                    try {
+                        const [machinesList, machineStats] = await Promise.all([
+                            machinesService.getAllMachines(),
+                            machinesService.getMachineStats()
+                        ]);
+
+                        console.log('Machines list fetched:', machinesList);
+                        console.log('Machine stats fetched:', machineStats);
+
+                        setMachinesData({
+                            total: machineStats.total,
+                            online: machineStats.online,
+                            offline: machineStats.offline,
+                            repair: machineStats.maintenance,
+                            machines: machinesList.slice(0, 2).map((m: any) => ({
+                                id: m.id,
+                                field: m.field,
+                                battery: m.battery,
+                                trash: m.trash,
+                                bags: m.bags,
+                                status: m.status === 'online' ? 'Online' : m.status === 'offline' ? 'Offline' : 'Maintenance'
+                            }))
+                        });
+                    } catch (error) {
+                        console.error('Error fetching machines data:', error);
+                    }
+
+                    // Fetch workers data
+                    try {
+                        const [workersList, workerStats] = await Promise.all([
+                            workersService.getAllWorkers(),
+                            workersService.getWorkerStats()
+                        ]);
+
+                        console.log('Workers list fetched:', workersList);
+                        console.log('Worker stats fetched:', workerStats);
+
+                        // Calculate top performers
+                        const sortedWorkers = [...workersList].sort((a: any, b: any) => b.picked - a.picked).slice(0, 3);
+
+                        setWorkersData({
+                            stats: {
+                                total: workerStats.totalWorkers,
+                                active: workerStats.totalWorkers, // Assume all are active for now
+                                wagesPaid: `₹${workerStats.totalCost.toLocaleString()}`,
+                                avgEfficiency: `${workerStats.avgEfficiency}%`
+                            },
+                            topPerformers: sortedWorkers.map((w: any) => ({
+                                name: w.name,
+                                picked: w.picked,
+                                wage: `₹${w.cost.toLocaleString()}`
+                            }))
+                        });
+                    } catch (error) {
+                        console.error('Error fetching workers data:', error);
+                    }
+                }
+
+                // Fetch news data (public, no auth needed)
+                try {
+                    const newsResponse = await getAllNews({ limit: 3 });
+                    console.log('News fetched:', newsResponse);
+                    if (newsResponse && newsResponse.length > 0) {
+                        setNewsData({
+                            headline: newsResponse[0].title,
+                            subtext: newsResponse[0].preview,
+                            ticker: newsResponse.slice(0, 3).map((n: any) => n.title),
+                            liveViewers: "1.2k",
+                            breaking: newsResponse[0].isFeatured
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error fetching news data:', error);
+                }
             } catch (error) {
-                console.error('Error fetching dashboard preview data:', error);
+                console.error('Error fetching preview data:', error);
             }
         };
 
-        fetchDashboardData();
+        fetchAllData();
     }, []);
 
     // Update the features array with real data if available
-    const updatedFeatures = dashboardData 
-        ? features.map(f => f.id === 'dashboard' ? { ...f, previewData: dashboardData } : f)
-        : features;
+    const updatedFeatures = features.map(f => {
+        if (f.id === 'dashboard' && dashboardData) return { ...f, previewData: dashboardData };
+        if (f.id === 'machines' && machinesData) return { ...f, previewData: machinesData };
+        if (f.id === 'workers' && workersData) return { ...f, previewData: workersData };
+        if (f.id === 'news_station' && newsData) return { ...f, previewData: newsData };
+        return f;
+    });
 
     return (
         <div className="relative w-full z-20 pb-40">

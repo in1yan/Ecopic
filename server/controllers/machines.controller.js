@@ -1,106 +1,36 @@
-// Machines Controller with Dummy Data
-
-// In-memory storage for machines
-let machines = [
-    { 
-        id: 1, 
-        field: 'Field A', 
-        battery: 85, 
-        temp: 42, 
-        trash: 2.3, 
-        bags: 12, 
-        status: 'online',
-        location: { lat: 11.0168, lng: 76.9558 },
-        lastUpdated: new Date().toISOString()
-    },
-    { 
-        id: 2, 
-        field: 'Field B', 
-        battery: 72, 
-        temp: 45, 
-        trash: 1.8, 
-        bags: 10, 
-        status: 'online',
-        location: { lat: 11.0178, lng: 76.9568 },
-        lastUpdated: new Date().toISOString()
-    },
-    { 
-        id: 3, 
-        field: 'Field A', 
-        battery: 45, 
-        temp: 38, 
-        trash: 3.1, 
-        bags: 8, 
-        status: 'online',
-        location: { lat: 11.0188, lng: 76.9578 },
-        lastUpdated: new Date().toISOString()
-    },
-    { 
-        id: 4, 
-        field: 'Field C', 
-        battery: 0, 
-        temp: 0, 
-        trash: 0, 
-        bags: 0, 
-        status: 'offline',
-        location: { lat: 11.0198, lng: 76.9588 },
-        lastUpdated: new Date(Date.now() - 3600000).toISOString() // 1 hour ago
-    },
-    { 
-        id: 5, 
-        field: 'Field B', 
-        battery: 92, 
-        temp: 40, 
-        trash: 1.5, 
-        bags: 15, 
-        status: 'online',
-        location: { lat: 11.0208, lng: 76.9598 },
-        lastUpdated: new Date().toISOString()
-    },
-    { 
-        id: 6, 
-        field: 'Field D', 
-        battery: 35, 
-        temp: 48, 
-        trash: 2.8, 
-        bags: 6, 
-        status: 'maintenance',
-        location: { lat: 11.0218, lng: 76.9608 },
-        lastUpdated: new Date().toISOString()
-    },
-    { 
-        id: 7, 
-        field: 'Field C', 
-        battery: 68, 
-        temp: 43, 
-        trash: 2.0, 
-        bags: 11, 
-        status: 'online',
-        location: { lat: 11.0228, lng: 76.9618 },
-        lastUpdated: new Date().toISOString()
-    },
-    { 
-        id: 8, 
-        field: 'Field A', 
-        battery: 55, 
-        temp: 41, 
-        trash: 2.5, 
-        bags: 9, 
-        status: 'online',
-        location: { lat: 11.0238, lng: 76.9628 },
-        lastUpdated: new Date().toISOString()
-    }
-];
-
-let issueReports = [];
-let reportId = 1;
+// Machines Controller with MongoDB Database
+import Machine from '../models/Machine.js';
 
 // Get all machines
 export const getAllMachines = async (req, res) => {
     try {
+        const userId = req.user?.userId;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+        }
+
+        const machines = await Machine.find({ userId }).sort({ machineNumber: 1 }).lean();
+
+        // Transform for frontend
+        const transformedMachines = machines.map(machine => ({
+            id: machine.machineNumber,
+            field: machine.field,
+            battery: machine.battery,
+            temp: machine.temp,
+            trash: machine.trash,
+            bags: machine.bags,
+            status: machine.status,
+            location: machine.location,
+            lastUpdated: machine.lastUpdated
+        }));
+
         res.json({
             success: true,
-            data: machines
+            data: transformedMachines
         });
     } catch (error) {
         console.error('Error fetching machines:', error);
@@ -114,6 +44,17 @@ export const getAllMachines = async (req, res) => {
 // Get machine statistics
 export const getMachineStats = async (req, res) => {
     try {
+        const userId = req.user?.userId;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+        }
+
+        const machines = await Machine.find({ userId }).lean();
+
         const total = machines.length;
         const online = machines.filter(m => m.status === 'online').length;
         const offline = machines.filter(m => m.status === 'offline').length;
@@ -150,7 +91,19 @@ export const getMachineStats = async (req, res) => {
 export const getMachineById = async (req, res) => {
     try {
         const { id } = req.params;
-        const machine = machines.find(m => m.id === parseInt(id));
+        const userId = req.user?.userId;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+        }
+
+        const machine = await Machine.findOne({ 
+            userId, 
+            machineNumber: parseInt(id) 
+        }).lean();
 
         if (!machine) {
             return res.status(404).json({
@@ -159,9 +112,23 @@ export const getMachineById = async (req, res) => {
             });
         }
 
+        // Transform for frontend
+        const transformedMachine = {
+            id: machine.machineNumber,
+            field: machine.field,
+            battery: machine.battery,
+            temp: machine.temp,
+            trash: machine.trash,
+            bags: machine.bags,
+            status: machine.status,
+            location: machine.location,
+            lastUpdated: machine.lastUpdated,
+            issues: machine.issues
+        };
+
         res.json({
             success: true,
-            data: machine
+            data: transformedMachine
         });
     } catch (error) {
         console.error('Error fetching machine:', error);
@@ -177,10 +144,21 @@ export const updateMachineStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status, battery, temp, trash, bags } = req.body;
+        const userId = req.user?.userId;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+        }
 
-        const machineIndex = machines.findIndex(m => m.id === parseInt(id));
+        const machine = await Machine.findOne({ 
+            userId, 
+            machineNumber: parseInt(id) 
+        });
 
-        if (machineIndex === -1) {
+        if (!machine) {
             return res.status(404).json({
                 success: false,
                 message: 'Machine not found'
@@ -188,17 +166,32 @@ export const updateMachineStatus = async (req, res) => {
         }
 
         // Update machine data
-        if (status) machines[machineIndex].status = status;
-        if (battery !== undefined) machines[machineIndex].battery = battery;
-        if (temp !== undefined) machines[machineIndex].temp = temp;
-        if (trash !== undefined) machines[machineIndex].trash = trash;
-        if (bags !== undefined) machines[machineIndex].bags = bags;
-        machines[machineIndex].lastUpdated = new Date().toISOString();
+        if (status) machine.status = status;
+        if (battery !== undefined) machine.battery = battery;
+        if (temp !== undefined) machine.temp = temp;
+        if (trash !== undefined) machine.trash = trash;
+        if (bags !== undefined) machine.bags = bags;
+        machine.lastUpdated = new Date();
+
+        await machine.save();
+
+        // Transform for frontend
+        const transformedMachine = {
+            id: machine.machineNumber,
+            field: machine.field,
+            battery: machine.battery,
+            temp: machine.temp,
+            trash: machine.trash,
+            bags: machine.bags,
+            status: machine.status,
+            location: machine.location,
+            lastUpdated: machine.lastUpdated
+        };
 
         res.json({
             success: true,
             message: 'Machine status updated successfully',
-            data: machines[machineIndex]
+            data: transformedMachine
         });
     } catch (error) {
         console.error('Error updating machine status:', error);
@@ -214,8 +207,19 @@ export const reportMachineIssue = async (req, res) => {
     try {
         const { id } = req.params;
         const { issueType, description, priority } = req.body;
+        const userId = req.user?.userId;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+        }
 
-        const machine = machines.find(m => m.id === parseInt(id));
+        const machine = await Machine.findOne({ 
+            userId, 
+            machineNumber: parseInt(id) 
+        });
 
         if (!machine) {
             return res.status(404).json({
@@ -232,31 +236,44 @@ export const reportMachineIssue = async (req, res) => {
             });
         }
 
-        const newReport = {
-            id: reportId++,
-            machineId: parseInt(id),
-            machineName: `Machine #${id}`,
-            field: machine.field,
+        const newIssue = {
             issueType,
             description,
             priority: priority || 'medium',
             status: 'open',
-            reportedAt: new Date().toISOString(),
+            reportedAt: new Date(),
             resolvedAt: null
         };
 
-        issueReports.push(newReport);
+        machine.issues.push(newIssue);
 
         // Update machine status to maintenance if critical
         if (priority === 'high' || priority === 'critical') {
-            const machineIndex = machines.findIndex(m => m.id === parseInt(id));
-            machines[machineIndex].status = 'maintenance';
+            machine.status = 'maintenance';
         }
+
+        await machine.save();
+
+        // Get the newly added issue (last one)
+        const addedIssue = machine.issues[machine.issues.length - 1];
+
+        const transformedReport = {
+            id: addedIssue._id.toString(),
+            machineId: machine.machineNumber,
+            machineName: `Machine #${machine.machineNumber}`,
+            field: machine.field,
+            issueType: addedIssue.issueType,
+            description: addedIssue.description,
+            priority: addedIssue.priority,
+            status: addedIssue.status,
+            reportedAt: addedIssue.reportedAt,
+            resolvedAt: addedIssue.resolvedAt
+        };
 
         res.status(201).json({
             success: true,
             message: 'Issue reported successfully',
-            data: newReport
+            data: transformedReport
         });
     } catch (error) {
         console.error('Error reporting machine issue:', error);

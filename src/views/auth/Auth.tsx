@@ -1,7 +1,7 @@
 import { AuroraBackground } from "@/components/AuroraBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import MainApp from "@/views/app/MainApp";
+import { useNavigate } from "react-router-dom";
 import { authService } from "@/services/authService";
 import { GlareCard } from "@/components/GlareCard";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -29,6 +29,7 @@ const FeatureCard = ({ title, image, onClick }: { title: string; image: string |
 
 export default function Auth() {
     const { t } = useLanguage();
+    const navigate = useNavigate();
 
     // Define features with translations
     const features = [
@@ -86,12 +87,14 @@ export default function Auth() {
         const checkAuth = async () => {
             if (authService.isAuthenticated()) {
                 const isValid = await authService.verifyToken();
-                setIsAuthenticated(isValid);
+                if (isValid) {
+                    navigate('/app', { replace: true });
+                }
             }
             setIsCheckingAuth(false);
         };
         checkAuth();
-    }, []);
+    }, [navigate]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -126,7 +129,8 @@ export default function Auth() {
             }
 
             if (response.success) {
-                setIsAuthenticated(true);
+                // Navigate to app after successful login/register
+                navigate('/app', { replace: true });
                 // Clear form data
                 setFormData({
                     fullName: '',
@@ -158,7 +162,7 @@ export default function Auth() {
 
     const handleLogout = async () => {
         await authService.logout();
-        setIsAuthenticated(false);
+        navigate('/auth', { replace: true });
         setFormData({
             fullName: '',
             email: '',
@@ -167,8 +171,9 @@ export default function Auth() {
         });
     };
 
+    // Don't show the auth page if user is authenticated (they'll be redirected)
     if (isAuthenticated) {
-        return <MainApp onLogout={handleLogout} />;
+        return null;
     }
 
     return (

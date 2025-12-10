@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL, getAuthHeaders } from '@/config/api';
 
 interface Worker {
     id: number;
@@ -21,7 +21,9 @@ export const workersService = {
     // Get all worker records
     async getAllWorkers(): Promise<Worker[]> {
         try {
-            const response = await fetch(`${API_BASE_URL}/workers`);
+            const response = await fetch(`${API_BASE_URL}/workers`, {
+                headers: getAuthHeaders()
+            });
             const data = await response.json();
             
             if (!data.success) {
@@ -38,7 +40,9 @@ export const workersService = {
     // Get worker statistics
     async getWorkerStats(): Promise<WorkerStats> {
         try {
-            const response = await fetch(`${API_BASE_URL}/workers/stats`);
+            const response = await fetch(`${API_BASE_URL}/workers/stats`, {
+                headers: getAuthHeaders()
+            });
             const data = await response.json();
             
             if (!data.success) {
@@ -55,7 +59,9 @@ export const workersService = {
     // Get worker by ID
     async getWorkerById(id: number): Promise<Worker> {
         try {
-            const response = await fetch(`${API_BASE_URL}/workers/${id}`);
+            const response = await fetch(`${API_BASE_URL}/workers/${id}`, {
+                headers: getAuthHeaders()
+            });
             const data = await response.json();
             
             if (!data.success) {
@@ -74,9 +80,7 @@ export const workersService = {
         try {
             const response = await fetch(`${API_BASE_URL}/workers`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(workerData),
             });
             
@@ -98,6 +102,7 @@ export const workersService = {
         try {
             const response = await fetch(`${API_BASE_URL}/workers/${id}`, {
                 method: 'DELETE',
+                headers: getAuthHeaders()
             });
             
             const data = await response.json();

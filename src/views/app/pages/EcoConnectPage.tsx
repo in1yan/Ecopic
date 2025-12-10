@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Phone, Users, FileText, ExternalLink, Leaf, ShieldAlert, Plus, Ticket } from "lucide-react";
 import { getAllHelplines, getAllNews, createTicket, getTicketStats, type Helpline, type NewsArticle, type TicketStats } from "../../../services/ecoConnectService";
 
-export const EcoConnectPage = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
+export const EcoConnectPage = () => {
+    const navigate = useNavigate();
     const [helplines, setHelplines] = useState<Helpline[]>([]);
     const [news, setNews] = useState<NewsArticle[]>([]);
     const [ticketStats, setTicketStats] = useState<TicketStats | null>(null);
@@ -81,7 +83,7 @@ export const EcoConnectPage = ({ onNavigate }: { onNavigate: (page: string) => v
                         Create Ticket
                     </button>
                     <button
-                        onClick={() => onNavigate('dashboard')}
+                        onClick={() => navigate('/app')}
                         className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-semibold transition-all"
                     >
                         ← Back to Dashboard

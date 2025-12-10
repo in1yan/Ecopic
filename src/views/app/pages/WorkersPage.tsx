@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Trash2, Users, DollarSign, Activity, TrendingUp } from "lucide-react";
 import { workersService } from "@/services/workersService";
@@ -16,7 +17,8 @@ import {
     Cell
 } from "recharts";
 
-export const WorkersPage = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
+export const WorkersPage = () => {
+    const navigate = useNavigate();
     const [records, setRecords] = useState<any[]>([]);
     const [stats, setStats] = useState({
         totalWorkers: 0,
@@ -136,7 +138,7 @@ export const WorkersPage = ({ onNavigate }: { onNavigate: (page: string) => void
                     <p className="text-zinc-400 text-lg">Track hours, costs, and efficiency per worker.</p>
                 </div>
                 <button
-                    onClick={() => onNavigate('dashboard')}
+                    onClick={() => navigate('/app')}
                     className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-semibold transition-all"
                 >
                     <ArrowLeft className="w-5 h-5" /> Back to Dashboard

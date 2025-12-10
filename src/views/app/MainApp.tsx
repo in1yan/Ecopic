@@ -1,36 +1,34 @@
 import { useState, useRef } from 'react';
-import { AuroraBackground } from '@/components/AuroraBackground';
-import { Header } from '@/components/Header';
+import { useNavigate } from 'react-router-dom';
 import { FeatureScroll, features } from '@/components/FeatureScroll';
-import FeatureDetail from './FeatureDetail';
 
-interface MainAppProps {
-    onLogout?: () => void;
-}
-
-export default function MainApp({ onLogout }: MainAppProps) {
+export default function MainApp() {
+    const navigate = useNavigate();
     const [selectedFeature, setSelectedFeature] = useState<typeof features[0] | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    const handleSelectFeature = (feature: typeof features[0]) => {
+        // Navigate to the appropriate route based on feature ID
+        const routeMap: Record<string, string> = {
+            dashboard: '/app/dashboard',
+            machines: '/app/machines',
+            workers: '/app/workers',
+            weather: '/app/weather',
+            news_station: '/app/ecoconnect',
+        };
+
+        const route = routeMap[feature.id];
+        if (route) {
+            navigate(route);
+        }
+    };
+
     return (
-        <AuroraBackground>
-            <div ref={containerRef} className="relative w-full h-full overflow-y-auto">
-                {/* Header */}
-                <Header onSelectFeature={setSelectedFeature} onLogout={onLogout} />
-
-                {/* Scrollable Content */}
-                <div className="relative z-20 pt-32 pb-20">
-                    <FeatureScroll onSelectFeature={setSelectedFeature} containerRef={containerRef} />
-                </div>
-
-                {/* Feature Detail Modal */}
-                {selectedFeature && (
-                    <FeatureDetail
-                        feature={selectedFeature}
-                        onClose={() => setSelectedFeature(null)}
-                    />
-                )}
+        <div ref={containerRef} className="relative w-full h-full">
+            {/* Scrollable Content */}
+            <div className="relative z-20 pt-32 pb-20">
+                <FeatureScroll onSelectFeature={handleSelectFeature} containerRef={containerRef} />
             </div>
-        </AuroraBackground>
+        </div>
     );
 }

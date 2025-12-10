@@ -6,8 +6,12 @@ import {
     updateMachineStatus,
     reportMachineIssue
 } from '../controllers/machines.controller.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Apply authentication middleware to all routes
+router.use(authenticateToken);
 
 // Machine routes
 router.get('/', getAllMachines);

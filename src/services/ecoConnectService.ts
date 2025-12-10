@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:3001/api';
+import { API_BASE_URL, getAuthHeaders } from '@/config/api';
+
+const API_BASE = API_BASE_URL;
 
 // ========== SUPPORT TICKETS TYPES ==========
 
@@ -105,13 +107,17 @@ export const getAllTickets = async (params?: {
     priority?: string;
 }): Promise<SupportTicket[]> => {
     const queryParams = new URLSearchParams(params as Record<string, string>);
-    const response = await fetch(`${API_BASE}/ecoconnect/tickets?${queryParams}`);
+    const response = await fetch(`${API_BASE}/ecoconnect/tickets?${queryParams}`, {
+        headers: getAuthHeaders()
+    });
     const data = await response.json();
     return data.data;
 };
 
 export const getTicketById = async (id: number): Promise<SupportTicket> => {
-    const response = await fetch(`${API_BASE}/ecoconnect/tickets/${id}`);
+    const response = await fetch(`${API_BASE}/ecoconnect/tickets/${id}`, {
+        headers: getAuthHeaders()
+    });
     const data = await response.json();
     return data.data;
 };
@@ -119,7 +125,7 @@ export const getTicketById = async (id: number): Promise<SupportTicket> => {
 export const createTicket = async (ticketData: CreateTicketDto): Promise<SupportTicket> => {
     const response = await fetch(`${API_BASE}/ecoconnect/tickets`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(ticketData),
     });
     const data = await response.json();
@@ -129,7 +135,7 @@ export const createTicket = async (ticketData: CreateTicketDto): Promise<Support
 export const updateTicket = async (id: number, updateData: UpdateTicketDto): Promise<SupportTicket> => {
     const response = await fetch(`${API_BASE}/ecoconnect/tickets/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(updateData),
     });
     const data = await response.json();
@@ -137,7 +143,9 @@ export const updateTicket = async (id: number, updateData: UpdateTicketDto): Pro
 };
 
 export const getTicketStats = async (): Promise<TicketStats> => {
-    const response = await fetch(`${API_BASE}/ecoconnect/tickets/stats`);
+    const response = await fetch(`${API_BASE}/ecoconnect/tickets/stats`, {
+        headers: getAuthHeaders()
+    });
     const data = await response.json();
     return data.data;
 };
@@ -154,13 +162,17 @@ export const getAllNews = async (params?: {
     if (params?.featured !== undefined) queryParams.append('featured', params.featured.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     
-    const response = await fetch(`${API_BASE}/ecoconnect/news?${queryParams}`);
+    const response = await fetch(`${API_BASE}/ecoconnect/news?${queryParams}`, {
+        headers: getAuthHeaders()
+    });
     const data = await response.json();
     return data.data;
 };
 
 export const getNewsById = async (id: number): Promise<NewsArticle> => {
-    const response = await fetch(`${API_BASE}/ecoconnect/news/${id}`);
+    const response = await fetch(`${API_BASE}/ecoconnect/news/${id}`, {
+        headers: getAuthHeaders()
+    });
     const data = await response.json();
     return data.data;
 };
@@ -175,7 +187,9 @@ export const getAllHelplines = async (params?: {
     if (params?.category) queryParams.append('category', params.category);
     if (params?.active !== undefined) queryParams.append('active', params.active.toString());
     
-    const response = await fetch(`${API_BASE}/ecoconnect/helplines?${queryParams}`);
+    const response = await fetch(`${API_BASE}/ecoconnect/helplines?${queryParams}`, {
+        headers: getAuthHeaders()
+    });
     const data = await response.json();
     return data.data;
 };

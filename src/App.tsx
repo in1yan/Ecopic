@@ -1,16 +1,16 @@
-
-import Auth from "@/views/auth/Auth";
-import { LanguageProvider } from "@/i18n/LanguageContext";
-import { WorkerProvider } from "@/context/WorkerContext";
+import { RouterProvider } from 'react-router-dom';
+import { LanguageProvider } from '@/i18n/LanguageContext';
+import { WorkerProvider } from '@/context/WorkerContext';
+import { router } from '@/routes';
 
 function App() {
     return (
         <LanguageProvider>
             <WorkerProvider>
-                <Auth />
+                <RouterProvider router={router} />
             </WorkerProvider>
         </LanguageProvider>
     );
 }
 
-export default App
+export default App;

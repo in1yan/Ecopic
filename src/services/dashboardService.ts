@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL, getAuthHeaders } from '@/config/api';
 
 interface DashboardStats {
     totalWorkers: {
@@ -20,6 +20,16 @@ interface DashboardStats {
         count: number;
         change: string;
         description: string;
+    };
+    monthlyRevenue?: {
+        amount: string;
+        change: string;
+        raw: number;
+    };
+    netProfit?: {
+        amount: string;
+        change: string;
+        raw: number;
     };
 }
 
@@ -52,7 +62,9 @@ export const dashboardService = {
     // Get dashboard statistics
     async getStats(): Promise<DashboardStats> {
         try {
-            const response = await fetch(`${API_BASE_URL}/dashboard/stats`);
+            const response = await fetch(`${API_BASE_URL}/dashboard/stats`, {
+                headers: getAuthHeaders()
+            });
             const data = await response.json();
             
             if (!data.success) {
@@ -69,7 +81,9 @@ export const dashboardService = {
     // Get inventory data
     async getInventory(): Promise<Inventory> {
         try {
-            const response = await fetch(`${API_BASE_URL}/dashboard/inventory`);
+            const response = await fetch(`${API_BASE_URL}/dashboard/inventory`, {
+                headers: getAuthHeaders()
+            });
             const data = await response.json();
             
             if (!data.success) {
@@ -86,7 +100,9 @@ export const dashboardService = {
     // Get deliveries
     async getDeliveries(): Promise<Delivery[]> {
         try {
-            const response = await fetch(`${API_BASE_URL}/dashboard/deliveries`);
+            const response = await fetch(`${API_BASE_URL}/dashboard/deliveries`, {
+                headers: getAuthHeaders()
+            });
             const data = await response.json();
             
             if (!data.success) {
@@ -103,7 +119,9 @@ export const dashboardService = {
     // Get recent activity
     async getActivity(): Promise<Activity[]> {
         try {
-            const response = await fetch(`${API_BASE_URL}/dashboard/activity`);
+            const response = await fetch(`${API_BASE_URL}/dashboard/activity`, {
+                headers: getAuthHeaders()
+            });
             const data = await response.json();
             
             if (!data.success) {
@@ -122,9 +140,7 @@ export const dashboardService = {
         try {
             const response = await fetch(`${API_BASE_URL}/dashboard/deliveries`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(deliveryData),
             });
             

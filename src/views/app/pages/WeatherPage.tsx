@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sun, Cloud, CloudRain, Haze, Droplets, Wind, ArrowLeft, CloudLightning, Snowflake } from "lucide-react";
 
-export const WeatherPage = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
+export const WeatherPage = () => {
+    const navigate = useNavigate();
     const [weatherData, setWeatherData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -149,7 +151,7 @@ export const WeatherPage = ({ onNavigate }: { onNavigate: (page: string) => void
                     <p className="text-zinc-400 text-lg">Real-time weather monitoring for precision farming {locationName && `(${locationName})`}</p>
                 </div>
                 <button
-                    onClick={() => onNavigate('dashboard')}
+                    onClick={() => navigate('/app')}
                     className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-semibold transition-all"
                 >
                     <ArrowLeft className="w-5 h-5" /> Back to Dashboard

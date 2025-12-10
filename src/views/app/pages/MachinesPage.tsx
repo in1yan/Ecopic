@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { machinesService } from "@/services/machinesService";
 
-export const MachinesPage = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
+export const MachinesPage = () => {
+    const navigate = useNavigate();
     const [machines, setMachines] = useState<any[]>([]);
     const [stats, setStats] = useState({
         total: 0,
@@ -67,7 +69,7 @@ export const MachinesPage = ({ onNavigate }: { onNavigate: (page: string) => voi
                     <p className="text-zinc-400 text-lg">Real-time status of cotton picking machines</p>
                 </div>
                 <button
-                    onClick={() => onNavigate('dashboard')}
+                    onClick={() => navigate('/app')}
                     className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-semibold transition-all"
                 >
                     ← Back to Dashboard

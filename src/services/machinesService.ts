@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL, getAuthHeaders } from '@/config/api';
 
 interface Machine {
     id: number;
@@ -42,7 +42,9 @@ export const machinesService = {
     // Get all machines
     async getAllMachines(): Promise<Machine[]> {
         try {
-            const response = await fetch(`${API_BASE_URL}/machines`);
+            const response = await fetch(`${API_BASE_URL}/machines`, {
+                headers: getAuthHeaders()
+            });
             const data = await response.json();
             
             if (!data.success) {
@@ -59,7 +61,9 @@ export const machinesService = {
     // Get machine statistics
     async getMachineStats(): Promise<MachineStats> {
         try {
-            const response = await fetch(`${API_BASE_URL}/machines/stats`);
+            const response = await fetch(`${API_BASE_URL}/machines/stats`, {
+                headers: getAuthHeaders()
+            });
             const data = await response.json();
             
             if (!data.success) {
@@ -76,7 +80,9 @@ export const machinesService = {
     // Get machine by ID
     async getMachineById(id: number): Promise<Machine> {
         try {
-            const response = await fetch(`${API_BASE_URL}/machines/${id}`);
+            const response = await fetch(`${API_BASE_URL}/machines/${id}`, {
+                headers: getAuthHeaders()
+            });
             const data = await response.json();
             
             if (!data.success) {
@@ -95,9 +101,7 @@ export const machinesService = {
         try {
             const response = await fetch(`${API_BASE_URL}/machines/${id}/status`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(updates),
             });
             
@@ -123,9 +127,7 @@ export const machinesService = {
         try {
             const response = await fetch(`${API_BASE_URL}/machines/${machineId}/report`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(issueData),
             });
             
