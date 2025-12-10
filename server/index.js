@@ -8,6 +8,7 @@ import db from './database.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import workersRoutes from './routes/workers.routes.js';
 import machinesRoutes from './routes/machines.routes.js';
+import ecoconnectRoutes from './routes/ecoconnect.routes.js';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/workers', workersRoutes);
 app.use('/api/machines', machinesRoutes);
+app.use('/api/ecoconnect', ecoconnectRoutes);
 
 // Helper function to generate JWT token
 const generateToken = (userId, email) => {
