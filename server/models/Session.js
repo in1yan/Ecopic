@@ -15,8 +15,7 @@ const sessionSchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date,
-    required: true,
-    index: true
+    required: true
   }
 }, {
   timestamps: true
@@ -25,10 +24,7 @@ const sessionSchema = new mongoose.Schema({
 // Index for faster token lookups
 sessionSchema.index({ token: 1 });
 
-// Index for cleaning up expired sessions
-sessionSchema.index({ expiresAt: 1 });
-
-// Automatically remove expired sessions
+// Automatically remove expired sessions using TTL index
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const Session = mongoose.model('Session', sessionSchema);

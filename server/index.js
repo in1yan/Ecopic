@@ -422,3 +422,6 @@ connectDB().then(() => {
         console.log(`🔐 JWT Authentication enabled`);
     });
 });
+
+// Export for serverless deployments (Vercel, AWS Lambda, etc.)
+export default app;
