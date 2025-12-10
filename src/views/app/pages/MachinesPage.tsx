@@ -1,18 +1,40 @@
-// ... (imports)
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { machinesService } from "@/services/machinesService";
 
 export const MachinesPage = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
-    // ... (machines data)
-    const machines = [
-        { id: 1, field: 'Field A', battery: 85, temp: 42, trash: 2.3, bags: 12, status: 'online' },
-        { id: 2, field: 'Field B', battery: 72, temp: 45, trash: 1.8, bags: 10, status: 'online' },
-        { id: 3, field: 'Field A', battery: 45, temp: 38, trash: 3.1, bags: 8, status: 'online' },
-        { id: 4, field: 'Field C', battery: 0, temp: 0, trash: 0, bags: 0, status: 'offline' }
-    ];
-
+    const [machines, setMachines] = useState<any[]>([]);
+    const [stats, setStats] = useState({
+        total: 0,
+        online: 0,
+        offline: 0,
+        maintenance: 0,
+        totalBags: 0
+    });
+    const [loading, setLoading] = useState(true);
     const [selectedMachineId, setSelectedMachineId] = useState<number | null>(null);
     const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+
+    // Fetch machines data on mount
+    useEffect(() => {
+        fetchMachinesData();
+    }, []);
+
+    const fetchMachinesData = async () => {
+        try {
+            setLoading(true);
+            const [machinesData, statsData] = await Promise.all([
+                machinesService.getAllMachines(),
+                machinesService.getMachineStats()
+            ]);
+            setMachines(machinesData);
+            setStats(statsData);
+        } catch (error) {
+            console.error('Error fetching machines data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleReportIssue = (machineId: number) => {
         setSelectedMachineId(machineId);
@@ -23,6 +45,14 @@ export const MachinesPage = ({ onNavigate }: { onNavigate: (page: string) => voi
         setIsTicketModalOpen(false);
         setSelectedMachineId(null);
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-white text-xl">Loading machines data...</div>
+            </div>
+        );
+    }
 
     return (
         <motion.div
@@ -48,19 +78,19 @@ export const MachinesPage = ({ onNavigate }: { onNavigate: (page: string) => voi
             <div className="grid grid-cols-4 gap-4 mb-8">
                 <div className="p-4 bg-black/30 backdrop-blur-xl border border-white/10 rounded-xl text-center">
                     <div className="text-zinc-400 text-sm mb-1">Total Machines</div>
-                    <div className="text-3xl font-bold text-white">4</div>
+                    <div className="text-3xl font-bold text-white">{stats.total}</div>
                 </div>
                 <div className="p-4 bg-black/30 backdrop-blur-xl border border-green-500/20 rounded-xl text-center">
                     <div className="text-zinc-400 text-sm mb-1">Online</div>
-                    <div className="text-3xl font-bold text-green-400">3</div>
+                    <div className="text-3xl font-bold text-green-400">{stats.online}</div>
                 </div>
                 <div className="p-4 bg-black/30 backdrop-blur-xl border border-red-500/20 rounded-xl text-center">
                     <div className="text-zinc-400 text-sm mb-1">Offline</div>
-                    <div className="text-3xl font-bold text-red-400">1</div>
+                    <div className="text-3xl font-bold text-red-400">{stats.offline}</div>
                 </div>
                 <div className="p-4 bg-black/30 backdrop-blur-xl border border-white/10 rounded-xl text-center">
                     <div className="text-zinc-400 text-sm mb-1">Total Bags Today</div>
-                    <div className="text-3xl font-bold text-white">45</div>
+                    <div className="text-3xl font-bold text-white">{stats.totalBags}</div>
                 </div>
             </div>
 
@@ -81,6 +111,7 @@ export const MachinesPage = ({ onNavigate }: { onNavigate: (page: string) => voi
                     <TicketModal
                         machineId={selectedMachineId}
                         onClose={handleCloseModal}
+                        onSubmitSuccess={fetchMachinesData}
                     />
                 )}
             </AnimatePresence>
@@ -98,11 +129,12 @@ const MachineCard = ({ machine, onReportIssue }: { machine: any, onReportIssue: 
                 <p className="text-zinc-400">{machine.field}</p>
             </div>
             <div className="flex flex-col items-end gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${machine.status === 'online'
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-red-500/20 text-red-400'
-                    }`}>
-                    {machine.status === 'online' ? '● Online' : '● Offline'}
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    machine.status === 'online' ? 'bg-green-500/20 text-green-400' :
+                    machine.status === 'maintenance' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-red-500/20 text-red-400'
+                }`}>
+                    ● {machine.status.charAt(0).toUpperCase() + machine.status.slice(1)}
                 </span>
                 <button
                     onClick={onReportIssue}
@@ -146,18 +178,35 @@ const MachineCard = ({ machine, onReportIssue }: { machine: any, onReportIssue: 
     </div>
 );
 
-const TicketModal = ({ machineId, onClose }: { machineId: number | null, onClose: () => void }) => {
+const TicketModal = ({ machineId, onClose, onSubmitSuccess }: { machineId: number | null, onClose: () => void, onSubmitSuccess: () => void }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formData, setFormData] = useState({
+        issueType: 'Mechanical Failure',
+        priority: 'medium',
+        description: ''
+    });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!machineId) return;
+
         setIsSubmitting(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsSubmitting(false);
+        try {
+            await machinesService.reportIssue(machineId, {
+                issueType: formData.issueType,
+                description: formData.description,
+                priority: formData.priority
+            });
+
             alert(`Ticket raised successfully for Machine #${machineId}! Support team has been notified.`);
             onClose();
-        }, 1500);
+            onSubmitSuccess();
+        } catch (error) {
+            console.error('Error reporting issue:', error);
+            alert('Failed to submit ticket. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -176,7 +225,11 @@ const TicketModal = ({ machineId, onClose }: { machineId: number | null, onClose
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-zinc-300 mb-1">Issue Type</label>
-                        <select className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500/50">
+                        <select 
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                            value={formData.issueType}
+                            onChange={(e) => setFormData({ ...formData, issueType: e.target.value })}
+                        >
                             <option>Mechanical Failure</option>
                             <option>Electrical Issue</option>
                             <option>Software/Sensor Error</option>
@@ -187,11 +240,15 @@ const TicketModal = ({ machineId, onClose }: { machineId: number | null, onClose
 
                     <div>
                         <label className="block text-sm font-medium text-zinc-300 mb-1">Priority</label>
-                        <select className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500/50">
-                            <option>Low (Routine)</option>
-                            <option>Medium (Needs Attention)</option>
-                            <option>High (Urgent)</option>
-                            <option>Critical (Machine Down)</option>
+                        <select 
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                            value={formData.priority}
+                            onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                        >
+                            <option value="low">Low (Routine)</option>
+                            <option value="medium">Medium (Needs Attention)</option>
+                            <option value="high">High (Urgent)</option>
+                            <option value="critical">Critical (Machine Down)</option>
                         </select>
                     </div>
 
@@ -201,6 +258,8 @@ const TicketModal = ({ machineId, onClose }: { machineId: number | null, onClose
                             rows={4}
                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50"
                             placeholder="Describe the issue in detail..."
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             required
                         />
                     </div>

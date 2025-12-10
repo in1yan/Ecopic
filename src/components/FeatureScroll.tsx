@@ -1,7 +1,8 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef, useState, useEffect, ChangeEvent } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useWorkerContext } from "@/context/WorkerContext";
 import { LayoutDashboard, Tractor, Users, CloudSun, LucideIcon, Bell, Wrench, CheckCircle, AlertTriangle, Radio, TrendingUp, Globe, Activity } from "lucide-react";
+import { dashboardService } from "@/services/dashboardService";
 
 const GradientIcon = ({ icon: Icon, id, from, to }: { icon: LucideIcon, id: string, from: string, to: string }) => (
     <div className="relative flex items-center justify-center">
@@ -107,9 +108,47 @@ export const features = [
 ];
 
 export const FeatureScroll = ({ onSelectFeature, containerRef }: { onSelectFeature: (feature: typeof features[0]) => void, containerRef: React.RefObject<HTMLDivElement> }) => {
+    const [dashboardData, setDashboardData] = useState<any>(null);
+
+    useEffect(() => {
+        // Fetch real dashboard data
+        const fetchDashboardData = async () => {
+            try {
+                const [stats, inventory] = await Promise.all([
+                    dashboardService.getStats(),
+                    dashboardService.getInventory()
+                ]);
+
+                setDashboardData({
+                    revenue: { amount: '₹12.5L', label: 'Monthly Revenue', change: '+15%' },
+                    profit: { amount: '₹8.3L', label: 'Net Profit', change: '+24%' },
+                    workers: { total: stats.totalWorkers.count, change: stats.totalWorkers.change },
+                    machines: { active: stats.activeMachines.count, online: 6, change: stats.activeMachines.change },
+                    yield: { amount: `${stats.todaysYield.count} ${stats.todaysYield.unit}`, label: stats.todaysYield.description },
+                    bags: { count: stats.cottonBags.count, label: stats.cottonBags.description, change: stats.cottonBags.change },
+                    market: { price: '₹6,200/q', trend: '+2.4%', status: 'High Demand' },
+                    inventory: { 
+                        current: `${inventory.currentStock}q`, 
+                        capacity: `${inventory.maxCapacity}q`, 
+                        nextDelivery: 'Tomorrow' 
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching dashboard preview data:', error);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
+
+    // Update the features array with real data if available
+    const updatedFeatures = dashboardData 
+        ? features.map(f => f.id === 'dashboard' ? { ...f, previewData: dashboardData } : f)
+        : features;
+
     return (
         <div className="relative w-full z-20 pb-40">
-            {features.map((feature, index) => (
+            {updatedFeatures.map((feature, index) => (
                 <FeatureCard
                     key={feature.id}
                     feature={feature}

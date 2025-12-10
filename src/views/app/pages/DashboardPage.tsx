@@ -1,7 +1,60 @@
 import { motion } from 'framer-motion';
 import { Package, Truck, Calendar, Plus, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { dashboardService } from '../../../services/dashboardService';
 
 export default function DashboardPage() {
+    const [stats, setStats] = useState({
+        totalWorkers: { count: 0, change: '+0%', description: '' },
+        activeMachines: { count: 0, change: '+0%', description: '' },
+        todaysYield: { count: 0, unit: 'kg', description: '' },
+        cottonBags: { count: 0, change: '+0%', description: '' }
+    });
+    const [inventory, setInventory] = useState({
+        currentStock: 0,
+        maxCapacity: 0,
+        percentageFull: 0,
+        totalHarvested: 0,
+        pendingDelivery: 0,
+        unit: 'quintals'
+    });
+    const [deliveries, setDeliveries] = useState<any[]>([]);
+    const [activities, setActivities] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            const [statsData, inventoryData, deliveriesData, activitiesData] = await Promise.all([
+                dashboardService.getStats(),
+                dashboardService.getInventory(),
+                dashboardService.getDeliveries(),
+                dashboardService.getActivity()
+            ]);
+
+            setStats(statsData);
+            setInventory(inventoryData);
+            setDeliveries(deliveriesData);
+            setActivities(activitiesData);
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen w-full flex justify-center items-center">
+                <div className="text-white text-xl">Loading dashboard...</div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen w-full flex justify-center p-4 md:p-8">
             {/* Main Glassy Card Container - Increased Length */}
@@ -36,10 +89,10 @@ export default function DashboardPage() {
                                 <div className="text-zinc-400 text-sm font-medium">Total Workers</div>
 
                             </div>
-                            <div className="text-4xl font-bold text-white mb-2">24</div>
+                            <div className="text-4xl font-bold text-white mb-2">{stats.totalWorkers.count}</div>
                             <div className="flex items-center gap-2">
-                                <span className="text-green-400 text-sm font-semibold">+12%</span>
-                                <span className="text-zinc-500 text-sm">from last week</span>
+                                <span className="text-green-400 text-sm font-semibold">{stats.totalWorkers.change}</span>
+                                <span className="text-zinc-500 text-sm">{stats.totalWorkers.description}</span>
                             </div>
                         </div>
 
@@ -49,10 +102,10 @@ export default function DashboardPage() {
                                 <div className="text-zinc-400 text-sm font-medium">Active Machines</div>
 
                             </div>
-                            <div className="text-4xl font-bold text-white mb-2">8</div>
+                            <div className="text-4xl font-bold text-white mb-2">{stats.activeMachines.count}</div>
                             <div className="flex items-center gap-2">
-                                <span className="text-green-400 text-sm font-semibold">+61.2%</span>
-                                <span className="text-zinc-500 text-sm">efficiency</span>
+                                <span className="text-green-400 text-sm font-semibold">{stats.activeMachines.change}</span>
+                                <span className="text-zinc-500 text-sm">{stats.activeMachines.description}</span>
                             </div>
                         </div>
 
@@ -62,9 +115,9 @@ export default function DashboardPage() {
                                 <div className="text-zinc-400 text-sm font-medium">Today's Yield</div>
 
                             </div>
-                            <div className="text-4xl font-bold text-white mb-2">1,234 kg</div>
+                            <div className="text-4xl font-bold text-white mb-2">{stats.todaysYield.count} {stats.todaysYield.unit}</div>
                             <div className="flex items-center gap-2">
-                                <span className="text-zinc-500 text-sm">Total today</span>
+                                <span className="text-zinc-500 text-sm">{stats.todaysYield.description}</span>
                             </div>
                         </div>
 
@@ -74,10 +127,10 @@ export default function DashboardPage() {
                                 <div className="text-zinc-400 text-sm font-medium">Cotton Bags</div>
 
                             </div>
-                            <div className="text-4xl font-bold text-white mb-2">45</div>
+                            <div className="text-4xl font-bold text-white mb-2">{stats.cottonBags.count}</div>
                             <div className="flex items-center gap-2">
-                                <span className="text-green-400 text-sm font-semibold">+8%</span>
-                                <span className="text-zinc-500 text-sm">sealed today</span>
+                                <span className="text-green-400 text-sm font-semibold">{stats.cottonBags.change}</span>
+                                <span className="text-zinc-500 text-sm">{stats.cottonBags.description}</span>
                             </div>
                         </div>
                     </motion.div>
@@ -105,22 +158,22 @@ export default function DashboardPage() {
                                 <div>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="text-zinc-400">Current Stock</span>
-                                        <span className="text-white font-bold">850q / 1000q</span>
+                                        <span className="text-white font-bold">{inventory.currentStock}q / {inventory.maxCapacity}q</span>
                                     </div>
                                     <div className="w-full bg-zinc-700/50 h-3 rounded-full overflow-hidden">
-                                        <div className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full" style={{ width: '85%' }} />
+                                        <div className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full" style={{ width: `${inventory.percentageFull}%` }} />
                                     </div>
-                                    <div className="mt-2 text-xs text-zinc-500 text-right">85% Full</div>
+                                    <div className="mt-2 text-xs text-zinc-500 text-right">{inventory.percentageFull}% Full</div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="p-3 bg-white/5 rounded-lg border border-white/5">
                                         <div className="text-zinc-400 text-xs mb-1">Total Harvested</div>
-                                        <div className="text-xl font-bold text-white">2,450q</div>
+                                        <div className="text-xl font-bold text-white">{inventory.totalHarvested}q</div>
                                     </div>
                                     <div className="p-3 bg-white/5 rounded-lg border border-white/5">
                                         <div className="text-zinc-400 text-xs mb-1">Pending Delivery</div>
-                                        <div className="text-xl font-bold text-orange-400">150q</div>
+                                        <div className="text-xl font-bold text-orange-400">{inventory.pendingDelivery}q</div>
                                     </div>
                                 </div>
                             </div>
@@ -155,20 +208,20 @@ export default function DashboardPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
-                                        {[
-                                            { name: 'Ramesh Traders', qty: '200q', date: 'Tomorrow, 10 AM', status: 'Scheduled', color: 'text-blue-400 bg-blue-400/10' },
-                                            { name: 'Global Cottons', qty: '450q', date: 'Dec 02, 2024', status: 'Completed', color: 'text-green-400 bg-green-400/10' },
-                                            { name: 'Local Mandi Agent', qty: '150q', date: 'Dec 05, 2024', status: 'In-Transit', color: 'text-orange-400 bg-orange-400/10' },
-                                        ].map((item, idx) => (
-                                            <tr key={idx} className="group">
+                                        {deliveries.map((item) => (
+                                            <tr key={item.id} className="group">
                                                 <td className="py-3 text-white font-medium">{item.name}</td>
-                                                <td className="py-3 text-zinc-300">{item.qty}</td>
+                                                <td className="py-3 text-zinc-300">{item.quantity}</td>
                                                 <td className="py-3 text-zinc-300 flex items-center gap-2">
                                                     <Calendar className="w-3 h-3 text-zinc-500" />
                                                     {item.date}
                                                 </td>
                                                 <td className="py-3">
-                                                    <span className={`px-2 py-1 rounded text-xs font-medium ${item.color}`}>
+                                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                        item.statusColor === 'blue' ? 'text-blue-400 bg-blue-400/10' :
+                                                        item.statusColor === 'green' ? 'text-green-400 bg-green-400/10' :
+                                                        'text-orange-400 bg-orange-400/10'
+                                                    }`}>
                                                         {item.status}
                                                     </span>
                                                 </td>
@@ -194,13 +247,8 @@ export default function DashboardPage() {
                     >
                         <h2 className="text-2xl font-bold text-white mb-4">Recent Activity</h2>
                         <div className="space-y-3">
-                            {[
-                                { time: '10:30 AM', activity: 'Machine #3 completed Field B', status: 'success' },
-                                { time: '09:45 AM', activity: 'Worker shift started - 12 workers', status: 'info' },
-                                { time: '08:20 AM', activity: 'Quality check passed - Batch #45', status: 'success' },
-                                { time: '07:15 AM', activity: 'Machine #1 maintenance scheduled', status: 'warning' },
-                            ].map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg border border-white/5 hover:border-white/10 transition-all">
+                            {activities.map((item) => (
+                                <div key={item.id} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg border border-white/5 hover:border-white/10 transition-all">
                                     <div className={`w-2 h-2 rounded-full ${item.status === 'success' ? 'bg-green-400' :
                                         item.status === 'warning' ? 'bg-yellow-400' :
                                             'bg-blue-400'

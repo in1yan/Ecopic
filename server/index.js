@@ -5,6 +5,9 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import db from './database.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
+import workersRoutes from './routes/workers.routes.js';
+import machinesRoutes from './routes/machines.routes.js';
 
 dotenv.config();
 
@@ -15,6 +18,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// API Routes
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/workers', workersRoutes);
+app.use('/api/machines', machinesRoutes);
 
 // Helper function to generate JWT token
 const generateToken = (userId, email) => {

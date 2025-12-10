@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Trash2, Users, DollarSign, Activity, TrendingUp } from "lucide-react";
-import { useWorkerContext } from "@/context/WorkerContext";
+import { workersService } from "@/services/workersService";
 import {
     BarChart,
     Bar,
@@ -17,7 +17,13 @@ import {
 } from "recharts";
 
 export const WorkersPage = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
-    const { records, addRecord, deleteRecord, stats } = useWorkerContext();
+    const [records, setRecords] = useState<any[]>([]);
+    const [stats, setStats] = useState({
+        totalWorkers: 0,
+        totalCost: 0,
+        avgEfficiency: '0'
+    });
+    const [loading, setLoading] = useState(true);
 
     // State for form inputs
     const [formData, setFormData] = useState({
@@ -30,30 +36,67 @@ export const WorkersPage = ({ onNavigate }: { onNavigate: (page: string) => void
 
     const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
+    // Fetch workers and stats on mount
+    useEffect(() => {
+        fetchWorkersData();
+    }, []);
+
+    const fetchWorkersData = async () => {
+        try {
+            setLoading(true);
+            const [workersData, statsData] = await Promise.all([
+                workersService.getAllWorkers(),
+                workersService.getWorkerStats()
+            ]);
+            setRecords(workersData);
+            setStats(statsData);
+        } catch (error) {
+            console.error('Error fetching workers data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Handle Form Input
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     // Add New Record
-    const handleAddRecord = (e: React.FormEvent) => {
+    const handleAddRecord = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name || !formData.hours || !formData.cost || !formData.picked) return;
 
-        addRecord({
-            name: formData.name,
-            date: formData.date,
-            hours: parseFloat(formData.hours),
-            cost: parseFloat(formData.cost),
-            picked: parseFloat(formData.picked)
-        });
+        try {
+            await workersService.addWorker({
+                name: formData.name,
+                date: formData.date,
+                hours: parseFloat(formData.hours),
+                cost: parseFloat(formData.cost),
+                picked: parseFloat(formData.picked)
+            });
 
-        setFormData({ name: '', date: new Date().toISOString().split('T')[0], hours: '', cost: '', picked: '' });
+            setFormData({ name: '', date: new Date().toISOString().split('T')[0], hours: '', cost: '', picked: '' });
+            
+            // Refresh data
+            await fetchWorkersData();
+        } catch (error) {
+            console.error('Error adding worker:', error);
+            alert('Failed to add worker record');
+        }
     };
 
     // Remove Record
-    const handleDelete = (id: number) => {
-        deleteRecord(id);
+    const handleDelete = async (id: number) => {
+        try {
+            await workersService.deleteWorker(id);
+            
+            // Refresh data
+            await fetchWorkersData();
+        } catch (error) {
+            console.error('Error deleting worker:', error);
+            alert('Failed to delete worker record');
+        }
     };
 
 
@@ -70,6 +113,14 @@ export const WorkersPage = ({ onNavigate }: { onNavigate: (page: string) => void
         });
         return Object.values(agg);
     }, [records]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-white text-xl">Loading workers data...</div>
+            </div>
+        );
+    }
 
     return (
         <motion.div
