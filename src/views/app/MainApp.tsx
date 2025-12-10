@@ -1,10 +1,9 @@
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FeatureScroll, features } from '@/components/FeatureScroll';
 
 export default function MainApp() {
     const navigate = useNavigate();
-    const [selectedFeature, setSelectedFeature] = useState<typeof features[0] | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const handleSelectFeature = (feature: typeof features[0]) => {

@@ -14,14 +14,14 @@ export const FeatureDetail = ({ feature, onClose }: { feature: typeof features[0
             case 'dashboard':
                 return <DashboardPage />;
             case 'machines':
-                return <MachinesPage onNavigate={onClose} />;
+                return <MachinesPage />;
             case 'workers':
-                return <WorkersPage onNavigate={onClose} />;
+                return <WorkersPage />;
 
             case 'weather':
-                return <WeatherPage onNavigate={onClose} />;
+                return <WeatherPage />;
             case 'news_station':
-                return <EcoConnectPage onNavigate={onClose} />;
+                return <EcoConnectPage />;
             default:
                 return null;
         }

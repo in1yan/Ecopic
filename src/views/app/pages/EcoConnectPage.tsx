@@ -199,7 +199,7 @@ const formatDate = (dateString: string) => {
     }
 };
 
-const ContactCard = ({ title, desc, phone, whatsapp, email, availability, color }: { 
+const ContactCard = ({ title, desc, phone, whatsapp, email: _email, availability, color }: { 
     title: string, 
     desc: string, 
     phone: string,

@@ -1,7 +1,6 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 
-export const EcoPickLogo = ({ className = "w-24 h-24", animate = false }: { className?: string; animate?: boolean }) => {
+export const EcoPickLogo = ({ className = "w-24 h-24" }: { className?: string; animate?: boolean }) => {
     return (
         <div className={`relative ${className} flex items-center justify-center`}>
             {/* Main Container SVG */}

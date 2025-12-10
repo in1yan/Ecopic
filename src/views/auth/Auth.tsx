@@ -69,7 +69,6 @@ export default function Auth() {
     const [selectedFeature, setSelectedFeature] = useState<typeof features[0] | null>(null);
     const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
     const [rememberMe, setRememberMe] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -160,21 +159,7 @@ export default function Auth() {
         );
     }
 
-    const handleLogout = async () => {
-        await authService.logout();
-        navigate('/auth', { replace: true });
-        setFormData({
-            fullName: '',
-            email: '',
-            password: '',
-            confirmPassword: ''
-        });
-    };
-
-    // Don't show the auth page if user is authenticated (they'll be redirected)
-    if (isAuthenticated) {
-        return null;
-    }
+    // Auth page - user will be redirected if authenticated
 
     return (
         <AuroraBackground>
