@@ -25,7 +25,7 @@ export const Header = ({ onSelectFeature, onLogout }: HeaderProps) => {
                 <div className="h-1 w-32 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-full mt-2 mb-3" />
 
                 <p className="text-2xl font-bold bg-gradient-to-r from-orange-500 via-white to-green-500 text-transparent bg-clip-text leading-tight">
-                    खेती प्रबंधन को आसान बनाया
+                    Made farm management easier
                 </p>
             </div>
 
